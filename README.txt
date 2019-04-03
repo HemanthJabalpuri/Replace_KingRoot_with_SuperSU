@@ -7,7 +7,7 @@ To uninstall completely the script deletes files multiple times
 ##########################################################################################
 
 1)Make a folder with name mrw in internal storage
-  Extract this zip in thaf mrw folder
+  Extract this zip in that mrw folder
 
 2)Download Terminal Emulator and run following commands
 
@@ -54,7 +54,7 @@ Requires :- Android Version less than 5.0
 1)Unintall Kingroot by going to KingRoot app
   Tap on 3 dot and
   choose settings and
-  choose remove root, untick keep backup option and unroot
+  choose remove root, tick keep backup option and unroot
 
 2)Install older version of Kingroot eg v4.5.0 from apkmirror
   and root with it
@@ -64,7 +64,8 @@ Requires :- Android Version less than 5.0
 ##########################################################################################
 # Method 4 - by using Magisk Manager
 ##########################################################################################
-Requires :- Android Version greter than or equal to 5.0
+Requires :- 1) Android Version greter than or equal to 5.0
+			2) Unlocked BootLoader else your device will soft brick
 
 1)Reroot with KingRoot
 

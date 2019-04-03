@@ -2,7 +2,7 @@
 
 # @HemanthJabalpuri XDA
 
-# Replace KingRoot or KingoRoot possibly others with SuperSU(<4.2) or with Magisk(greater than 4.1)
+# Replace KingRoot or KingoRoot possibly others with SuperSU
 # Idea to remove root from terminal with shell script is by Mr.Wolf and edited his script
 # +for compatible of newer versions of Kingroot
 # Newer versions of KingRoot are capable of recreating deleted files immediately
@@ -12,126 +12,10 @@
 # +and capable of flashing SuperSU directly in booted android without need of custom recovery
 
 ##########################################################################################
-# Set Variables
-##########################################################################################
-BL='\e[01;90m' >/dev/null 2>&1; # Black
-R='\e[01;91m' >/dev/null 2>&1; # Red
-G='\e[01;92m' >/dev/null 2>&1; # Green
-Y='\e[01;93m' >/dev/null 2>&1; # Yellow
-B='\e[01;94m' >/dev/null 2>&1; # Blue
-P='\e[01;95m' >/dev/null 2>&1; # Purple
-C='\e[01;96m' >/dev/null 2>&1; # Cyan
-W='\e[01;97m' >/dev/null 2>&1; # White
-N='\e[0m' >/dev/null 2>&1; # Null
-
-##########################################################################################
-# Pre-Checks
-##########################################################################################
-
-id="$(id)"; id="${id#*=}"; id="${id%%\(*}"; id="${id%% *}"
-if [ "$id" != "0" ] && [ "$id" != "root" ]; then
-  clear
-  echo; echo -e $R"Type su and then execute"$N
-  sleep 2
-  clear
-  exit 1
-fi
-
-getdir() {
-  case "$1" in
-    */*) dir=${1%/*}; [ -z $dir ] && echo "/" || echo $dir ;;
-    *) echo "." ;;
-  esac
-}
-if [ -f "$(getdir "$0")/busybox-arm" ]; then
-  bbpath="$(getdir "$0")"
-elif [ -f "$PWD/busybox-arm" ]; then
-  bbpath="$PWD"
-elif [ -f "$(getdir "$(readlink -f "$0")")/busybox-arm" ]; then
-  bbpath="$(getdir "$(readlink -f "$0")")"
-else
-  echo -e $R" Unable to get path of this script.. aborting"$N
-  exit 1
-fi
-
-case "$(uname -m)" in
-  *arm*) ARCH=arm;;
-  *86*) ARCH=x86;;
-  *mips*) ARCH=mips;;
-  *) echo -e $R" Unsupported ARCH $(uname -m)"$N
-     exit 1
-  ;;
-esac
-
-mount -o remount,rw /
-mount -o remount,rw /system
-
-if ! mount | grep " /system " | grep -q "rw,"
-then
-  echo; echo -e $R"Unable to mount /system"$N; echo
-  exit 1
-fi
-
-echo; echo -e $G"Preparing busybox setup"$N; echo
-
-cd /system/xbin
-for link in $(ls); do
-  if [ -L "$link" ]; then
-    case "$(readlink "$link")" in
-      *busybox) rm "$link";;
-    esac
-  fi
-done
-rm -f /system/xbin/busybox
-
-cp ${bbpath}/busybox-$ARCH /system/xbin/busybox
-chmod 555 /system/xbin/busybox
-/system/xbin/busybox --install -s /system/xbin
-
-export PATH=/system/xbin:/system/bin
-
-for i in echo dirname readlink sha1sum rm rmdir chattr mv ln chmod chown chgrp chcon strings mkdir unzip; do
-  if [ -z "$(command -v $i)" ]; then
-    echo; echo -e $R"Busybox setup failed .. aborting"$N; echo
-    exit 1
-  fi
-done
-
-cdir="$(dirname "$(readlink -f "$0")")";
-
-exec 2>>"$cdir/root.log"
-
-for i in Magisk.zip SuperSU-v2.82-SR5-20171001.zip update-binary README.txt busybox-arm busybox-x86 busybox-mips; do
-  if ! [ -r "$cdir/$i" ]; then
-    echo; echo -e $R"Essential files are missing"$N
-    echo; echo -e $R"Place all essential files in correct folder and execute"$N; echo
-    exit 1
-  fi
-done
-sha1_check() {
-  local hash=$(sha1sum "$1" | cut -d' ' -f1)
-  if [[ $2 != "$hash" ]]; then return 1; fi
-  return 0
-}
-if sha1_check "$cdir/busybox-arm" "35b3dd09ae379afa030fcfab422e9504c10244e9" &&
-   sha1_check "$cdir/busybox-mips" "3df1a0803395aab2ec66160482fd571096b3911d" &&
-   sha1_check "$cdir/busybox-x86" "11b3bc6a97b6632dcaf61c6bbe50bb2310307b23" &&
-   sha1_check "$cdir/Magisk.zip" "05a0c9661c6f620115a6f0d3f108bd21896ba555" &&
-   sha1_check "$cdir/README.txt" "9cf824029b81b9e1194a2e52f86e2dfbbdf65cfb" &&
-   sha1_check "$cdir/SuperSU-v2.82-SR5-20171001.zip" "263e0d8ebecfa1cb5a6a3a7fcdd9ad1ecd7710b7" &&
-   sha1_check "$cdir/update-binary" "2cfe503f14bc4f7971237dda1eb3188a6e663fd8"
-then
-   true
-else
-   echo; echo -e $R" Some files are moidfied"$N
-   echo; echo -e $R" Please download correct package"$N; echo
-   exit 1
-fi
-
-##########################################################################################
 # Helper Functions
 ##########################################################################################
 delete() {
+  [ -z "$1" ] && return
   if [ -f $1 -o -L $1 ]; then
     echo "removing file--$1" >&2
     chattr -ia $1 2>/dev/null
@@ -159,33 +43,88 @@ set_perm() {
   fi
 }
 
+get_context() {
+  CON=$(ls -Z "$1" 2>/dev/null | grep "u:object_r" | cut -d: -f3)
+  if [ -z "$CON" ] ; then
+    CON=$(LD_LIBRARY_PATH=/system/lib:/vendor/lib /system/bin/toolbox ls -Z "$1" 2>/dev/null | grep "u:object_r" | cut -d: -f3)
+  fi
+  if [ -z "$CON" ] ; then
+    CON=$(LD_LIBRARY_PATH=/system/lib:/vendor/lib /system/bin/toybox ls -Z "$1" 2>/dev/null | grep "u:object_r" | cut -d: -f3)
+  fi
+  if [ -z "$CON" ] ; then
+    CON=system_file
+  fi
+  echo "$CON"
+}
+
+find_delete() {
+  greppkg="$(pm list packages -f 2>/dev/null | grep -i "$1" | head -n1 | cut -d= -f2)"
+
+  if [ -z "$greppkg" ]; then return; fi
+  rootapk="$(dumpsys package $greppkg | grep -i "codepath" | head -n1 | cut -d= -f2 | cut -d' ' -f1)"
+  rootlib="$(dumpsys package $greppkg | grep -i "nativelibrarypath" | head -n1 | cut -d= -f2 | cut -d' ' -f1)"
+  rootdata="$(dumpsys package $greppkg | grep -i "datadir" | head -n1 | cut -d= -f2 | cut -d' ' -f1)"
+  rootver="$(dumpsys package $greppkg | grep -i "versionname" | head -n1 | cut -d= -f2 | cut -d' ' -f1)"
+  rootverc="$(dumpsys package $greppkg | grep -i "versioncode" | head -n1 | cut -d= -f2 | cut -d' ' -f1)"
+  echo "$rootapk--$rootver--$rootverc--$rootdata--$rootlib" >&2
+
+  sys=0
+  if [ "$(dumpsys package $greppkg | grep -ci "codepath")" -eq 2 ]; then
+    rootsysapk="$(dumpsys package $greppkg | grep -i "codepath" | tail -n1 | cut -d= -f2 | cut -d' ' -f1)"
+    rootsysver="$(dumpsys package $greppkg | grep -i "versionname" | tail -n1 | cut -d= -f2 | cut -d' ' -f1)"
+    rootsysverc="$(dumpsys package $greppkg | grep -i "versioncode" | tail -n1 | cut -d= -f2 | cut -d' ' -f1)"
+    echo "$rootsysapk--$rootsysver--$rootsysverc" >&2
+    sys=1
+  fi
+
+  LD_LIBRARY_PATH=/system/lib:/vendor/lib am force-stop $greppkg >/dev/null 2>&1
+  LD_LIBRARY_PATH=/system/lib:/vendor/lib am kill $greppkg >/dev/null 2>&1
+  for i in disable block clear uninstall; do
+    LD_LIBRARY_PATH=/system/lib:/vendor/lib pm $i $greppkg >/dev/null 2>&1
+  done
+  delete "$rootapk"
+  delete "$rootdata"
+  delete "$rootlib"
+  find /data/dalvik-cache -iname *${greppkg}* -delete
+
+  if [ "$sys" -eq "1" ]; then
+    delete "$rootsysapk"
+    find /data/dalvik-cache -iname *$(basename $rootsysapk)* -delete
+  fi
+}
+
+sha1_check() {
+  [ $2 = "$(sha1sum "$1" | cut -d' ' -f1)" ] && return 0
+  return 1
+}
+
+getdir() {
+  case "$1" in
+    */*) dir=${1%/*}; [ -z $dir ] && echo "/" || echo $dir ;;
+    *) echo "." ;;
+  esac
+}
+
 ##########################################################################################
 # KingRoot
 ##########################################################################################
 kingroot_data() {
-  kingroot="$(pm list packages -f | grep -i kingroot | head -n1)"
-
-  if [ -n "$kingroot" ]; then
-    kingrootapk="$(echo "$kingroot" | cut -d: -f2 | cut -d= -f1)"
-    kingrootpkg="$(echo "$kingroot" | cut -d= -f2)"
-    for i in disable block clear uninstall; do
-      LD_LIBRARY_PATH=/system/lib:/vendor/lib pm $i $kingrootpkg >/dev/null 2>&1
-    done
-    LD_LIBRARY_PATH=/system/lib:/vendor/lib am kill $kingrootpkg >/dev/null 2>&1
-    LD_LIBRARY_PATH=/system/lib:/vendor/lib am force-stop $kingrootpkg >/dev/null 2>&1
-    delete $kingrootapk
-  fi
   delete /data/app/*kingroot*
   delete /data/data/com.kingroot.kinguser
   delete /data/data/*kingroot*
   delete /data/dalvik-cache/*kingroot*
   delete /data/dalvik-cache/*/*kingroot*
+  delete /data/dalvik-cache/*tpsdaemon*
+  delete /data/dalvik-cache/*/*tpsdaemon*
+  delete /data/dalvik-cache/daemon
   delete /data/app-lib/*kingroot*
   delete /data/app-lib/*uranus*
   delete /data/data-lib
   delete /data/local/tmp/*uranus*
   delete /data/system/*uranus*
+  delete /data/system/tmp_init.rc
   delete /data/media/obb/*kingroot*
+  LD_LIBRARY_PATH=/system/lib:/vendor/lib pm uninstall com.kingroot.kinguser >/dev/null 2>&1
 }
 
 kingroot_storage() {
@@ -205,14 +144,16 @@ kingroot_storage() {
 }
 
 kingroot_dev() {
-  if [ -d /dev/kinguser.req.cache ]; then
-    if [ ! -z "$(ls /dev/kinguser.req.cache)" ]; then
-      for i in /dev/kinguser.req.cache/*; do
-        delete $i
-      done
+  for i in user root; do
+    if [ -d /dev/king$i.req.cache ]; then
+      if [ ! -z "$(ls /dev/king$i.req.cache)" ]; then
+        for j in /dev/king$i.req.cache/*; do
+          delete $j
+        done
+      fi
+      delete /dev/king$i.req.cache
     fi
-    delete /dev/kinguser.req.cache
-  fi
+  done
   delete /dev/ktools
   delete /dev/kufblck
   delete /dev/kulck
@@ -254,19 +195,6 @@ kingroot_system() {
 # Kingoroot
 ##########################################################################################
 kingoroot_data() {
-  kingoroot="$(pm list packages -f | grep -i kingo | head -n1)"
-
-  if [ -n "$kingoroot" ]; then
-    kingorootapk="$(echo "$kingoroot" | cut -d: -f2 | cut -d= -f1)"
-    kingorootpkg="$(echo "$kingoroot" | cut -d= -f2)"
-    for i in disable block clear uninstall; do
-      LD_LIBRARY_PATH=/system/lib:/vendor/lib pm $i $kingorootpkg >/dev/null 2>&1
-    done
-    LD_LIBRARY_PATH=/system/lib:/vendor/lib am kill $kingorootpkg >/dev/null 2>&1
-    LD_LIBRARY_PATH=/system/lib:/vendor/lib am force-stop $kingorootpkg >/dev/null 2>&1
-    delete $kingorootapk
-  fi
-
   delete /data/app/*kingo*
   delete /data/data/*kingo*
   delete /data/dalvik-cache/*kingo*
@@ -313,45 +241,33 @@ kingoroot_system() {
 ##########################################################################################
 # Special files
 ##########################################################################################
-remove_install-recovery() {
+remove_install_recovery() {
   if [ -f /system/etc/install-recovery.sh-ku.bak ]; then
-    INSTALLRECOVERYCON=$(ls -Z "/system/etc/install-recovery.sh-ku.bak" 2>/dev/null | grep "u:object_r" | cut -d: -f3)
-    if [ -z "$INSTALLRECOVERYCON" ] ; then
-      INSTALLRECOVERYCON=$(LD_LIBRARY_PATH=/system/lib:/vendor/lib /system/bin/toolbox ls -Z "/system/etc/install-recovery.sh-ku.bak" 2>/dev/null | grep "u:object_r" | cut -d: -f3)
-    fi
-    if [ -z "$INSTALLRECOVERYCON" ] ; then
-      INSTALLRECOVERYCON=$(LD_LIBRARY_PATH=/system/lib:/vendor/lib /system/bin/toybox ls -Z "/system/etc/install-recovery.sh-ku.bak" 2>/dev/null | grep "u:object_r" | cut -d: -f3)
-    fi
-    if [ -z "$INSTALLRECOVERYCON" ] ; then
-      INSTALLRECOVERYCON=system_file
-    fi
     move /system/etc/install-recovery.sh-ku.bak /system/etc/install-recovery.sh
-    set_perm 0 0 755 /system/etc/install-recovery.sh $INSTALLRECOVERYCON
-#    restorecon /system/etc/install-recovery.sh
+    IRCON=$(get_context /system/etc/install-recovery.sh-ku.bak)
+    set_perm 0 0 755 /system/etc/install-recovery.sh $IRCON
+    #restorecon /system/etc/install-recovery.sh
   elif [ -f /system/etc/install-recovery.sh ] && grep -q su /system/etc/install-recovery.sh; then
     delete /system/etc/install-recovery.sh
     delete /system/bin/install-recovery.sh
+  fi
+  if [ -f /system/bin/install-recovery.sh-ku.bak ] && [ ! -L /system/bin/install-recovery.sh ]; then
+    move /system/bin/install-recovery.sh-ku.bak /system/bin/install-recovery.sh
+    IRCON=$(get_context /system/bin/install-recovery.sh-ku.bak)
+    set_perm 0 0 755 /system/bin/install-recovery.sh $IRCON
+    #restorecon /system/bin/install-recovery.sh
   fi
 }
 
 remove_ddexe() {
   if [ -f /system/bin/ddexe_real ]; then
-    DDEXECON=$(ls -Z "/system/bin/ddexe_real" 2>/dev/null | grep "u:object_r" | cut -d: -f3)
-    if [ -z "$DDEXECON" ] ; then
-      DDEXECON=$(LD_LIBRARY_PATH=/system/lib:/vendor/lib /system/bin/toolbox ls -Z "/system/bin/ddexe_real" 2>/dev/null | grep "u:object_r" | cut -d: -f3)
-    fi
-    if [ -z "$DDEXECON" ] ; then
-      DDEXECON=$(LD_LIBRARY_PATH=/system/lib:/vendor/lib /system/bin/toybox ls -Z "/system/bin/ddexe_real" 2>/dev/null | grep "u:object_r" | cut -d: -f3)
-    fi
-    if [ -z "$DDEXECON" ] ; then
-      DDEXECON=system_file
-    fi
+    DDEXECON=$(get_context /system/bin/ddexe_real)
     move /system/bin/ddexe_real /system/bin/ddexe
     if [ -f /system/bin/ddexe-ku.bak ]; then
       move /system/bin/ddexe-ku.bak /system/bin/ddexe
     fi
     set_perm 0 0 755 /system/bin/ddexe $DDEXECON
-#    restorecon /system/bin/ddexe
+    #restorecon /system/bin/ddexe
     delete /system/bin/ddexe_real /system/bin/ddexe-ku.bak
   fi
 }
@@ -407,13 +323,10 @@ remove_king() {
   kingoroot_system
 
   # Special files
-  remove_install-recovery
+  remove_install_recovery
   supersu_code
 }
 
-##########################################################################################
-# Main
-##########################################################################################
 root() {
   if ! [ -f /data/replaceroot ]; then
     echo 1 > /data/replaceroot
@@ -425,18 +338,21 @@ root() {
   else
     echo $((`cat /data/replaceroot`+1)) > /data/replaceroot
   fi
+
+  find_delete kingroot
+  find_delete com.toprange.locker
+  find_delete com.kingx.cloudsdk
+  find_delete kingo
+  find_delete kingo
+
   echo;  echo -e $B"Cleaning ..."$N
   remove_king
   # Second time cleaning to destroy all
   echo;  echo -e $B"Cleaning ..."$N
   remove_king
   sleep 1
-  if [ -d /data/adb/magisk ]; then
-    echo; echo -e $G"Finished Cleaning..."$N
-  else
-    echo; echo -e $G"Finished Cleaning King(o)Root"$N
-    echo; echo -e $G"Execute suinstall.sh to install root"$N
-  fi
+  echo; echo -e $G"Finished Cleaning King(o)Root"$N
+  echo; echo -e $G"Execute root.sh again to install root"$N
   echo
   exit
 }
@@ -454,9 +370,115 @@ postuninstall() {
   exit
 }
 
+##########################################################################################
+# Pre-Checks
+##########################################################################################
+BL='\e[01;90m' >/dev/null 2>&1; # Black
+R='\e[01;91m' >/dev/null 2>&1; # Red
+G='\e[01;92m' >/dev/null 2>&1; # Green
+Y='\e[01;93m' >/dev/null 2>&1; # Yellow
+B='\e[01;94m' >/dev/null 2>&1; # Blue
+P='\e[01;95m' >/dev/null 2>&1; # Purple
+C='\e[01;96m' >/dev/null 2>&1; # Cyan
+W='\e[01;97m' >/dev/null 2>&1; # White
+N='\e[0m' >/dev/null 2>&1; # Null
+
+id="$(id)"; id="${id#*=}"; id="${id%%\(*}"; id="${id%% *}"
+if [ "$id" != "0" ] && [ "$id" != "root" ]; then
+  clear
+  echo; echo -e $R"Type su and then execute"$N
+  sleep 2
+  clear
+  exit 1
+fi
+
+OLDPWD="$PWD"
+cd "$0"/../
+if [ -f "$(getdir "$0")/busybox-arm" ]; then
+  bbpath="$(getdir "$0")"
+elif [ -f "$PWD/busybox-arm" ]; then
+  bbpath="$PWD"
+elif [ -f "$(getdir "$(readlink -f "$0")")/busybox-arm" ]; then
+  bbpath="$(getdir "$(readlink -f "$0")")"
+else
+  echo -e $R" Unable to get path of this script.. aborting"$N
+  exit 1
+fi
+cd "$OLDPWD"
+
+case "$(uname -m)" in
+  *arm*) ARCH=arm;;
+  *86*) ARCH=x86;;
+  *mips*) ARCH=mips;;
+  *) echo -e $R" Unsupported ARCH $(uname -m)"$N
+     exit 1
+  ;;
+esac
+
+mount -o remount,rw /
+mount -o remount,rw /system
+
+if ! mount | grep " /system " | grep -q "rw,"
+then
+  echo; echo -e $R"Unable to mount /system"$N; echo
+  exit 1
+fi
+
+cd /system/xbin
+for link in $(ls); do
+  if [ -L "$link" ]; then
+    case "$(readlink "$link")" in
+      *busybox) rm "$link";;
+    esac
+  fi
+done
+rm -f /system/xbin/busybox
+
+cp ${bbpath}/busybox-$ARCH /system/xbin/busybox
+chmod 555 /system/xbin/busybox
+/system/xbin/busybox --install -s /system/xbin
+
+export PATH=/system/xbin:/system/bin
+
+for i in echo dirname readlink sha1sum head tail cut rm rmdir chattr mv ln chmod chown chgrp chcon strings mkdir unzip; do
+  if [ -z "$(command -v $i)" ]; then
+    echo; echo -e $R"Busybox setup failed .. aborting"$N; echo
+    exit 1
+  fi
+done
+
+cdir="$(dirname "$(readlink -f "$0")")";
+
+exec 2>>"$cdir/root.log"
+
+for i in SuperSU-v2.82-SR5-20171001.zip update-binary README.txt busybox-arm busybox-x86 busybox-mips; do
+  if ! [ -r "$cdir/$i" ]; then
+    echo; echo -e $R"Essential files are missing"$N
+    echo; echo -e $R"Place all essential files in correct folder and execute"$N; echo
+    exit 1
+  fi
+done
+
+if sha1_check "$cdir/busybox-arm" "35b3dd09ae379afa030fcfab422e9504c10244e9" &&
+   sha1_check "$cdir/busybox-mips" "3df1a0803395aab2ec66160482fd571096b3911d" &&
+   sha1_check "$cdir/busybox-x86" "11b3bc6a97b6632dcaf61c6bbe50bb2310307b23" &&
+   sha1_check "$cdir/README.txt" "897254782a31a452528aadc62c9b639e1223bfdf" &&
+   sha1_check "$cdir/SuperSU-v2.82-SR5-20171001.zip" "263e0d8ebecfa1cb5a6a3a7fcdd9ad1ecd7710b7" &&
+   sha1_check "$cdir/update-binary" "78d3210296c2c0f06f07c397dfadd136dbce7e58"
+then
+   true
+else
+   echo; echo -e $R" Some files are moidfied"$N
+   echo; echo -e $R" Please download correct package"$N; echo
+   exit 1
+fi
+
+##########################################################################################
+# Main
+##########################################################################################
 echo -e $C"---------------------------------------"$N
-echo -e $C"---------- ${G}Made By : Mr.W0lf${N}${C} ----------"$N
-echo -e $C"---- ${G}Thanks @Chainfire for SuperSU${N}${C} ----"$N
+echo -e $C"---------- ${G}Made By : Mr.W0lf${C} ----------"$N
+echo -e $C"---- ${G}Thanks @Chainfire for SuperSU${C} ----"$N
 echo -e $C"---------------------------------------"$N
 
 [ -L /system/xbin/su ] && root
@@ -466,35 +488,22 @@ echo -e $C"---------------------------------------"$N
 [ -L /system/xbin/su ] && exit
 [ -L /system/bin/su ] && exit
 
-if [ -d /data/adb/magisk ]; then
-  root
-elif [ -f /system/xbin/su ]; then
+if [ -f /system/xbin/su ]; then
   su -v | grep -qi SUPERSU && postuninstall || root
+elif [ -d /data/adb/magisk ]; then
+  root
 fi
 
 echo; echo -e $G" Installing Root"$N; echo
 
 [ -f /data/replaceroot ] && rm /data/replaceroot
 # SuperSU installation
-mkdir /dev/tmp || ( echo "Unable to create /dev/tmp, aborting"; exit 1; )
-API=$(cat /system/build.prop | grep "ro.build.version.sdk=" | dd bs=1 skip=21 count=2 2>/dev/null)
-if [ "$API" -ge "21" ]; then
-  unzip -oq "$cdir/Magisk.zip" META-INF/com/google/android/update-binary -p > "$cdir/magisk-updater"
-  echo "###BEGIN MAGISK LOG###" >&2
-  sh "$cdir/magisk-updater" "dummy" "1" "$cdir/Magisk.zip"
-  echo "###END MAGISK LOG###" >&2
-  if [ $? -ne 0 ]; then
-    echo "###BEGIN SUPERSU LOG###" >&2
-    sh "$cdir/update-binary" "dummy" "1" "$cdir/SuperSU-v2.82-SR5-20171001.zip"
-    echo "###END SUPERSU LOG###" >&2
-  fi
-  delete "$cdir/magisk-updater"
-else
-  echo "###BEGIN SUPERSU LOG###" >&2
-  sh "$cdir/update-binary" "dummy" "1" "$cdir/SuperSU-v2.82-SR5-20171001.zip"
-  echo "###END SUPERSU LOG###" >&2
-fi
-if [ -f /system/xbin/su -a -f /system/lib/libsupol.so ] || [ -d /data/adb/magisk ]; then
+mkdir /dev/tmp || ( echo -e $R"Unable to create /dev/tmp, aborting"$N; exit 1; )
+echo "###BEGIN SUPERSU LOG###" >&2
+sh "$cdir/update-binary" "dummy" "1" "$cdir/SuperSU-v2.82-SR5-20171001.zip"
+echo "###END SUPERSU LOG###" >&2
+
+if [ -f /system/xbin/su -a -f /system/lib/libsupol.so ]; then
   echo; echo -e $G"* ${C}the device will reboot after a few seconds${N}${G} *"$N
   echo; echo -e $G"**********************************************"$N
   setprop sys.powerctl reboot

@@ -75,7 +75,7 @@ cp_perm() {
   fi
 }
 
-chattr() {
+chattri() {
   LD_LIBRARY_PATH=$SYSTEMLIBTOOLS $BINTOOLS/chattr$PIE -ia $1 1>/dev/null 2>/dev/null
 }
 
@@ -215,7 +215,9 @@ API=$(cat /system/build.prop | grep "ro.build.version.sdk=" | dd bs=1 skip=21 co
 ABI=$(cat /system/build.prop /default.prop | grep -m 1 "ro.product.cpu.abi=" | dd bs=1 skip=19 count=3 2>/dev/null)
 ABILONG=$(cat /system/build.prop /default.prop | grep -m 1 "ro.product.cpu.abi=" | dd bs=1 skip=19 2>/dev/null)
 ABI2=$(cat /system/build.prop /default.prop | grep -m 1 "ro.product.cpu.abi2=" | dd bs=1 skip=20 count=3 2>/dev/null)
+MKSH=/system/bin/mksh
 SUMOD=06755
+SUGOTE=false
 SUPOLICY=false
 INSTALL_RECOVERY_CONTEXT=u:object_r:system_file:s0
 PIE=
@@ -243,7 +245,9 @@ if [ "$ABI2" = "x86" ]; then ARCH=x86; ARCHTOOLS=x86_tools; fi;
 if [ "$API" -eq "$API" ]; then
   if [ "$API" -ge "17" ]; then
     PIE=.pie
-    if [ "$ARCH" = "x86" ]; then SU=su.pie; fi;
+    if unzip -l "$3" | grep -q "su.pie"; then
+      if [ "$ARCH" = "x86" ]; then SU=su.pie; fi;
+    fi
     if [ "$ABILONG" = "armeabi-v7a" ]; then ARCH=armv7; ARCHTOOLS=arm_tools; fi;
     if [ "$ABI" = "mip" ]; then ARCH=mips; ARCHTOOLS=mips_tools; fi;
     if [ "$ABILONG" = "mips" ]; then ARCH=mips; ARCHTOOLS=mips_tools; fi;
@@ -268,6 +272,9 @@ if [ "$API" -eq "$API" ]; then
     APPPROCESS=true
   fi
 fi
+if [ ! -f $MKSH ]; then
+  MKSH=/system/bin/sh
+fi
 
 if [ -z "$BIN" ] || [ -z "$BINTOOLS" ]; then
   ui_print "- Extracting files"
@@ -278,13 +285,25 @@ if [ -z "$BIN" ] || [ -z "$BINTOOLS" ]; then
   cd supersu
 
   unzip -oq "$ZIP"
-  if [ $? != 0 -o -z "$(ls supersu)" ]; then
+  if [ $? -ne 0 ]; then
     abort "Unzip failed. Aborting..."
   fi
 
   BIN=/dev/tmp/supersu/$ARCH
-  BINTOOLS=/dev/tmp/supersu/$ARCHTOOLS
+  if [ ! -d "/dev/tmp/supersu/arm_tools" ]; then
+    if [ "$ARCH" = "armv7" ]; then ARCHTOOLS=arm; fi
+    if [ "$ARCH" = "arm64" ]; then ARCHTOOLS=arm; fi
+    if [ "$ARCH" = "x64" ]; then ARCHTOOLS=x86; fi
+    if [ "$ARCH" = "mips64" ]; then ARCHTOOLS=mips; fi
+  fi
+  BINTOOLS=/dev/tmp/supersu/$ARCHTOOLS; echo "TOOLS---$BINTOOLS" >&2
   COM=/dev/tmp/supersu/common
+fi
+
+if grep -q SUGOTE "/dev/tmp/supersu/META-INF/com/google/android/update-binary"; then
+  if [ "$API" -ge "17" ] && [ "$API" -lt "22" ]; then
+    SUGOTE=true
+  fi
 fi
 
 # execute binaries from ramdisk
@@ -302,24 +321,24 @@ ui_print "- System mode"
 
 ui_print "- Disabling OTA survival"
 chmod 0755 $BINTOOLS/chattr$PIE
-chattr /system/bin/su
-chattr /system/xbin/su
-chattr /system/bin/.ext/.su
-chattr /system/sbin/su
-chattr /vendor/sbin/su
-chattr /vendor/bin/su
-chattr /vendor/xbin/su
-chattr /system/xbin/daemonsu
-chattr /system/xbin/sugote
-chattr /system/xbin/sugote_mksh
-chattr /system/xbin/supolicy
-chattr /system/xbin/ku.sud
-chattr /system/xbin/.ku
-chattr /system/xbin/.su
-chattr /system/lib/libsupol.so
-chattr /system/lib64/libsupol.so
-chattr /system/etc/install-recovery.sh
-chattr /system/bin/install-recovery.sh
+chattri /system/bin/su
+chattri /system/xbin/su
+chattri /system/bin/.ext/.su
+chattri /system/sbin/su
+chattri /vendor/sbin/su
+chattri /vendor/bin/su
+chattri /vendor/xbin/su
+chattri /system/xbin/daemonsu
+chattri /system/xbin/sugote
+chattri /system/xbin/sugote_mksh
+chattri /system/xbin/supolicy
+chattri /system/xbin/ku.sud
+chattri /system/xbin/.ku
+chattri /system/xbin/.su
+chattri /system/lib/libsupol.so
+chattri /system/lib64/libsupol.so
+chattri /system/etc/install-recovery.sh
+chattri /system/bin/install-recovery.sh
 
 ui_print "- Removing old files"
 
@@ -393,6 +412,10 @@ set_perm 0 0 0777 /system/bin/.ext
 cp_perm 0 0 $SUMOD $BIN/$SU /system/bin/.ext/.su
 cp_perm 0 0 $SUMOD $BIN/$SU /system/xbin/su
 cp_perm 0 0 0755 $BIN/$SU /system/xbin/daemonsu
+if ($SUGOTE); then
+  cp_perm 0 0 0755 $BIN/$SU /system/xbin/sugote u:object_r:zygote_exec:s0
+  cp_perm 0 0 0755 $MKSH /system/xbin/sugote-mksh
+fi
 if ($SUPOLICY); then
   cp_perm 0 0 0755 $BIN/supolicy /system/xbin/supolicy
   cp_perm 0 0 0644 $BIN/libsupol.so $SYSTEMLIBPATH/libsupol.so
