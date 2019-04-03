@@ -75,7 +75,7 @@ cp_perm() {
   fi
 }
 
-chattr_() {
+chattr() {
   LD_LIBRARY_PATH=$SYSTEMLIBTOOLS $BINTOOLS/chattr$PIE -ia $1 1>/dev/null 2>/dev/null
 }
 
@@ -211,10 +211,10 @@ mount_ /system
 mount_ /
 mount -o rw,remount / /
 
-API=$(cat /system/build.prop | grep "ro.build.version.sdk=" | dd bs=1 skip=21 count=2)
-ABI=$(cat /system/build.prop /default.prop | grep -m 1 "ro.product.cpu.abi=" | dd bs=1 skip=19 count=3)
-ABILONG=$(cat /system/build.prop /default.prop | grep -m 1 "ro.product.cpu.abi=" | dd bs=1 skip=19)
-ABI2=$(cat /system/build.prop /default.prop | grep -m 1 "ro.product.cpu.abi2=" | dd bs=1 skip=20 count=3)
+API=$(cat /system/build.prop | grep "ro.build.version.sdk=" | dd bs=1 skip=21 count=2 2>/dev/null)
+ABI=$(cat /system/build.prop /default.prop | grep -m 1 "ro.product.cpu.abi=" | dd bs=1 skip=19 count=3 2>/dev/null)
+ABILONG=$(cat /system/build.prop /default.prop | grep -m 1 "ro.product.cpu.abi=" | dd bs=1 skip=19 2>/dev/null)
+ABI2=$(cat /system/build.prop /default.prop | grep -m 1 "ro.product.cpu.abi2=" | dd bs=1 skip=20 count=3 2>/dev/null)
 SUMOD=06755
 SUPOLICY=false
 INSTALL_RECOVERY_CONTEXT=u:object_r:system_file:s0
@@ -278,6 +278,9 @@ if [ -z "$BIN" ] || [ -z "$BINTOOLS" ]; then
   cd supersu
 
   unzip -oq "$ZIP"
+  if [ $? != 0 -o -z "$(ls supersu)" ]; then
+    abort "Unzip failed. Aborting..."
+  fi
 
   BIN=/dev/tmp/supersu/$ARCH
   BINTOOLS=/dev/tmp/supersu/$ARCHTOOLS
@@ -292,31 +295,31 @@ RAMDISKLIBTOOLS=$BINTOOLS:$SYSTEMLIBTOOLS
 
 if [ "$API" -ge "19" ]; then
   # 4.4+: permissive all teh things
-  LD_LIBRARY_PATH=$RAMDISKLIB $BIN/supolicy --live "permissive *"
+  LD_LIBRARY_PATH=$RAMDISKLIB $BIN/supolicy --live "permissive *" 1>/dev/null
 fi
 
 ui_print "- System mode"
 
 ui_print "- Disabling OTA survival"
 chmod 0755 $BINTOOLS/chattr$PIE
-chattr_ /system/bin/su
-chattr_ /system/xbin/su
-chattr_ /system/bin/.ext/.su
-chattr_ /system/sbin/su
-chattr_ /vendor/sbin/su
-chattr_ /vendor/bin/su
-chattr_ /vendor/xbin/su
-chattr_ /system/xbin/daemonsu
-chattr_ /system/xbin/sugote
-chattr_ /system/xbin/sugote_mksh
-chattr_ /system/xbin/supolicy
-chattr_ /system/xbin/ku.sud
-chattr_ /system/xbin/.ku
-chattr_ /system/xbin/.su
-chattr_ /system/lib/libsupol.so
-chattr_ /system/lib64/libsupol.so
-chattr_ /system/etc/install-recovery.sh
-chattr_ /system/bin/install-recovery.sh
+chattr /system/bin/su
+chattr /system/xbin/su
+chattr /system/bin/.ext/.su
+chattr /system/sbin/su
+chattr /vendor/sbin/su
+chattr /vendor/bin/su
+chattr /vendor/xbin/su
+chattr /system/xbin/daemonsu
+chattr /system/xbin/sugote
+chattr /system/xbin/sugote_mksh
+chattr /system/xbin/supolicy
+chattr /system/xbin/ku.sud
+chattr /system/xbin/.ku
+chattr /system/xbin/.su
+chattr /system/lib/libsupol.so
+chattr /system/lib64/libsupol.so
+chattr /system/etc/install-recovery.sh
+chattr /system/bin/install-recovery.sh
 
 ui_print "- Removing old files"
 
