@@ -58,9 +58,17 @@ get_context() {
 }
 
 find_delete() {
+  if [ -n "$find_delete" ]; then
+    return
+  fi
   greppkg="$(pm list packages -f 2>/dev/null | grep -i "$1" | head -n1 | cut -d= -f2)"
 
-  if [ -z "$greppkg" ]; then return; fi
+  if [ -z "$greppkg" ]; then
+    find_delete=
+    return
+  else
+    find_delete=1
+  fi
   rootapk="$(dumpsys package $greppkg | grep -i "codepath" | head -n1 | cut -d= -f2 | cut -d' ' -f1)"
   rootlib="$(dumpsys package $greppkg | grep -i "nativelibrarypath" | head -n1 | cut -d= -f2 | cut -d' ' -f1)"
   rootdata="$(dumpsys package $greppkg | grep -i "datadir" | head -n1 | cut -d= -f2 | cut -d' ' -f1)"
@@ -223,6 +231,7 @@ kingoroot_system() {
     /system/etc/init.d/99SuperSUDaemon
     /system/etc/.has_su_daemon
     /system/lib/libsupol.so
+    /system/lib64/libsupol.so
     /system/sbin/su
     /system/sbin
     /system/xbin/daemonsu
@@ -333,17 +342,33 @@ root() {
   elif [ "$(cat /data/replaceroot)" -eq 5 ]; then
     rm /data/replaceroot
     echo; echo -e $R" Unable to remove Kingroot"$N
-    echo; echo -e $R" Try other methods by reading $cdir/README.txt"; echo
+    echo; echo -e $R" Try other methods by reading $cdir/README.txt"$N; echo
     exit 1
   else
     echo $((`cat /data/replaceroot`+1)) > /data/replaceroot
   fi
+
+  delete /data/app/*kingroot*
+  find /system/app -iname *king* -delete
+  LD_LIBRARY_PATH=/system/lib:/vendor/lib pm install -r $cdir/KingRoot_4.5.0.apk >/dev/null 2>&1
 
   find_delete kingroot
   find_delete com.toprange.locker
   find_delete com.kingx.cloudsdk
   find_delete kingo
   find_delete kingo
+  find_delete mgyun.shua.su
+  find_delete geohot.towelroot
+  find_delete shuame.rootgenius
+  find_delete z4mod.z4root
+  find_delete dianxinos.superuser
+  find_delete baidu.easyroot
+  find_delete baiyi_mobile.easyroot
+  find_delete zhiqupk.root.global
+  find_delete qihoo.permmgr
+  find_delete corner23.android.universalandroot
+  find_delete m0narx.su
+  find_delete genymotion.superuser
 
   echo;  echo -e $B"Cleaning ..."$N
   remove_king
@@ -426,19 +451,21 @@ fi
 
 cd /system/xbin
 for link in $(ls); do
-  if [ -L "$link" ]; then
-    case "$(readlink "$link")" in
-      *busybox) rm "$link";;
+  if [ -L $link ]; then
+    case $(readlink $link) in
+      *busybox) rm -f $link;;
     esac
   fi
 done
 rm -f /system/xbin/busybox
 
-cp ${bbpath}/busybox-$ARCH /system/xbin/busybox
+cp -f ${bbpath}/busybox-$ARCH /system/xbin/busybox
 chmod 555 /system/xbin/busybox
 /system/xbin/busybox --install -s /system/xbin
 
 export PATH=/system/xbin:/system/bin
+set_perm 0 0 0755 /system/xbin/busybox
+cd /
 
 for i in echo dirname readlink sha1sum head tail cut rm rmdir chattr mv ln chmod chown chgrp chcon strings mkdir unzip; do
   if [ -z "$(command -v $i)" ]; then
@@ -459,18 +486,19 @@ for i in SuperSU-v2.82-SR5-20171001.zip update-binary README.txt busybox-arm bus
   fi
 done
 
-if sha1_check "$cdir/busybox-arm" "35b3dd09ae379afa030fcfab422e9504c10244e9" &&
-   sha1_check "$cdir/busybox-mips" "3df1a0803395aab2ec66160482fd571096b3911d" &&
-   sha1_check "$cdir/busybox-x86" "11b3bc6a97b6632dcaf61c6bbe50bb2310307b23" &&
-   sha1_check "$cdir/README.txt" "897254782a31a452528aadc62c9b639e1223bfdf" &&
-   sha1_check "$cdir/SuperSU-v2.82-SR5-20171001.zip" "263e0d8ebecfa1cb5a6a3a7fcdd9ad1ecd7710b7" &&
-   sha1_check "$cdir/update-binary" "78d3210296c2c0f06f07c397dfadd136dbce7e58"
+if sha1_check "$cdir/busybox-arm" "1232d6d9ee6507c2904c9fbeecf9e36af3b6035d" &&
+  sha1_check "$cdir/busybox-mips" "3df1a0803395aab2ec66160482fd571096b3911d" &&
+  sha1_check "$cdir/busybox-x86" "d9e8528908dcf87a34df110f05d03695ed291760" &&
+  sha1_check "$cdir/KingRoot_4.5.0.apk" "df48a7852a458da71f44bb3c95ef9b9588938e82" &&
+  sha1_check "$cdir/README.txt" "897254782a31a452528aadc62c9b639e1223bfdf" &&
+  sha1_check "$cdir/SuperSU-v2.82-SR5-20171001.zip" "263e0d8ebecfa1cb5a6a3a7fcdd9ad1ecd7710b7" &&
+  sha1_check "$cdir/update-binary" "a87d406e927898be30f3932dd741df821123ffb9"
 then
-   true
+  true
 else
-   echo; echo -e $R" Some files are moidfied"$N
-   echo; echo -e $R" Please download correct package"$N; echo
-   exit 1
+  echo; echo -e $R" Some files are moidfied"$N
+  echo; echo -e $R" Please download correct package"$N; echo
+  exit 1
 fi
 
 ##########################################################################################
@@ -481,12 +509,13 @@ echo -e $C"---------- ${G}Made By : Mr.W0lf${C} ----------"$N
 echo -e $C"---- ${G}Thanks @Chainfire for SuperSU${C} ----"$N
 echo -e $C"---------------------------------------"$N
 
+[ -e /system/bin/su ] && root
+[ -L /system/bin/su ] && root
 [ -L /system/xbin/su ] && root
 [ -L /system/xbin/supolicy ] && root
-[ -L /system/bin/su ] && root
-[ -e /system/bin/su ] && root
-[ -L /system/xbin/su ] && exit
 [ -L /system/bin/su ] && exit
+[ -e /system/bin/su ] && exit
+[ -L /system/xbin/su ] && exit
 
 if [ -f /system/xbin/su ]; then
   su -v | grep -qi SUPERSU && postuninstall || root
@@ -503,12 +532,11 @@ echo "###BEGIN SUPERSU LOG###" >&2
 sh "$cdir/update-binary" "dummy" "1" "$cdir/SuperSU-v2.82-SR5-20171001.zip"
 echo "###END SUPERSU LOG###" >&2
 
-if [ -f /system/xbin/su -a -f /system/lib/libsupol.so ]; then
+if [ -f /system/xbin/su ] && su -v | grep -qi SUPERSU
+then
   echo; echo -e $G"* ${C}the device will reboot after a few seconds${N}${G} *"$N
   echo; echo -e $G"**********************************************"$N
-  setprop sys.powerctl reboot
-  sleep 3
-  /system/bin/reboot # fallback
+  (sleep 1; /system/bin/reboot)&
 fi
 echo; echo "Finished"; echo
 

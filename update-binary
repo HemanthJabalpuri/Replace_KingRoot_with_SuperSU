@@ -12,7 +12,7 @@ ps | grep zygote | grep -qv grep && BOOTMODE=true || BOOTMODE=false
 $BOOTMODE || ps -A 2>/dev/null | grep zygote | grep -qv grep && BOOTMODE=true
 
 ui_print() {
-  $BOOTMODE && echo "$1" || echo -e "ui_print $1\nui_print" > /proc/self/fd/$OUTFD;
+  $BOOTMODE && echo "$1" || echo -e "ui_print $1\nui_print" > /proc/self/fd/$OUTFD
 }
 
 is_mounted() {
@@ -34,37 +34,39 @@ abort() {
 }
 
 ch_con() {
-  LD_LIBRARY_PATH=$SYSTEMLIB /system/bin/toybox chcon -h u:object_r:system_file:s0 $1 1>/dev/null 2>/dev/null
-  LD_LIBRARY_PATH=$SYSTEMLIB /system/toolbox chcon -h u:object_r:system_file:s0 $1 1>/dev/null 2>/dev/null
-  LD_LIBRARY_PATH=$SYSTEMLIB /system/bin/toolbox chcon -h u:object_r:system_file:s0 $1 1>/dev/null 2>/dev/null
-  chcon -h u:object_r:system_file:s0 $1 1>/dev/null 2>/dev/null
-  LD_LIBRARY_PATH=$SYSTEMLIB /system/bin/toybox chcon u:object_r:system_file:s0 $1 1>/dev/null 2>/dev/null
-  LD_LIBRARY_PATH=$SYSTEMLIB /system/toolbox chcon u:object_r:system_file:s0 $1 1>/dev/null 2>/dev/null
-  LD_LIBRARY_PATH=$SYSTEMLIB /system/bin/toolbox chcon u:object_r:system_file:s0 $1 1>/dev/null 2>/dev/null
-  chcon u:object_r:system_file:s0 $1 1>/dev/null 2>/dev/null
+  LD_LIBRARY_PATH=$SYSTEMLIB /system/bin/toybox chcon -h u:object_r:system_file:s0 $1 >/dev/null 2>/dev/null
+  LD_LIBRARY_PATH=$SYSTEMLIB /system/toolbox chcon -h u:object_r:system_file:s0 $1 >/dev/null 2>/dev/null
+  LD_LIBRARY_PATH=$SYSTEMLIB /system/bin/toolbox chcon -h u:object_r:system_file:s0 $1 >/dev/null 2>/dev/null
+  chcon -h u:object_r:system_file:s0 $1 >/dev/null 2>/dev/null
+  LD_LIBRARY_PATH=$SYSTEMLIB /system/bin/toybox chcon u:object_r:system_file:s0 $1 >/dev/null 2>/dev/null
+  LD_LIBRARY_PATH=$SYSTEMLIB /system/toolbox chcon u:object_r:system_file:s0 $1 >/dev/null 2>/dev/null
+  LD_LIBRARY_PATH=$SYSTEMLIB /system/bin/toolbox chcon u:object_r:system_file:s0 $1 >/dev/null 2>/dev/null
+  chcon u:object_r:system_file:s0 $1 >/dev/null 2>/dev/null
 }
 
 ch_con_ext() {
-  LD_LIBRARY_PATH=$SYSTEMLIB /system/bin/toybox chcon $2 $1 1>/dev/null 2>/dev/null
-  LD_LIBRARY_PATH=$SYSTEMLIB /system/toolbox chcon $2 $1 1>/dev/null 2>/dev/null
-  LD_LIBRARY_PATH=$SYSTEMLIB /system/bin/toolbox chcon $2 $1 1>/dev/null 2>/dev/null
-  chcon $2 $1 1>/dev/null 2>/dev/null
+  LD_LIBRARY_PATH=$SYSTEMLIB /system/bin/toybox chcon $2 $1 >/dev/null 2>/dev/null
+  LD_LIBRARY_PATH=$SYSTEMLIB /system/toolbox chcon $2 $1 >/dev/null 2>/dev/null
+  LD_LIBRARY_PATH=$SYSTEMLIB /system/bin/toolbox chcon $2 $1 >/dev/null 2>/dev/null
+  chcon $2 $1 >/dev/null 2>/dev/null
 }
 
 ln_con() {
-  LD_LIBRARY_PATH=$SYSTEMLIB /system/bin/toybox ln -s $1 $2 1>/dev/null 2>/dev/null
-  LD_LIBRARY_PATH=$SYSTEMLIB /system/toolbox ln -s $1 $2 1>/dev/null 2>/dev/null
-  LD_LIBRARY_PATH=$SYSTEMLIB /system/bin/toolbox ln -s $1 $2 1>/dev/null 2>/dev/null
-  ln -s $1 $2 1>/dev/null 2>/dev/null
-  ch_con $2 1>/dev/null 2>/dev/null
+  LD_LIBRARY_PATH=$SYSTEMLIB /system/bin/toybox ln -s $1 $2 >/dev/null 2>/dev/null
+  LD_LIBRARY_PATH=$SYSTEMLIB /system/toolbox ln -s $1 $2 >/dev/null 2>/dev/null
+  LD_LIBRARY_PATH=$SYSTEMLIB /system/bin/toolbox ln -s $1 $2 >/dev/null 2>/dev/null
+  ln -s $1 $2 >/dev/null 2>/dev/null
+  ch_con $2 >/dev/null 2>/dev/null
 }
 
 set_perm() {
-  chown $1.$2 $4
-  chown $1:$2 $4
+  chown $1:$2 $4 || chown $1.$2 $4
   chmod $3 $4
-  ch_con $4
-  ch_con_ext $4 $5
+  if [ -z "$5" ]; then
+    ch_con $4
+  else
+    ch_con_ext $4 $5
+  fi
 }
 
 cp_perm() {
@@ -76,7 +78,8 @@ cp_perm() {
 }
 
 chattri() {
-  LD_LIBRARY_PATH=$SYSTEMLIBTOOLS $BINTOOLS/chattr$PIE -ia $1 1>/dev/null 2>/dev/null
+  if ! [ -f "$1" ]; then return; fi
+  LD_LIBRARY_PATH=$SYSTEMLIBTOOLS $BINTOOLS/chattr$PIE -ia $1 >/dev/null 2>/dev/null
 }
 
 wipe_system_files_if_present() {
@@ -314,7 +317,7 @@ RAMDISKLIBTOOLS=$BINTOOLS:$SYSTEMLIBTOOLS
 
 if [ "$API" -ge "19" ]; then
   # 4.4+: permissive all teh things
-  LD_LIBRARY_PATH=$RAMDISKLIB $BIN/supolicy --live "permissive *" 1>/dev/null
+  LD_LIBRARY_PATH=$RAMDISKLIB $BIN/supolicy --live "permissive *" >/dev/null
 fi
 
 ui_print "- System mode"
