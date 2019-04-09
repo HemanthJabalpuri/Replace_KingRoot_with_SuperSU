@@ -290,7 +290,7 @@ remove_debuggerd() {
     if [ -f /system/bin/debuggerd-ku.bak ]; then
       move /system/bin/debuggerd-ku.bak /system/bin/debuggerd
     fi
-    set_perm 0 0 755 /system/bin/debuggerd $DEBUGGERD
+    set_perm 0 0 755 /system/bin/debuggerd $DEBUGGERDCON
     #restorecon /system/bin/ddexe
     delete /system/bin/debuggerd_real
     delete /system/bin/debuggerd-ku.bak
