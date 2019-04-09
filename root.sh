@@ -365,7 +365,7 @@ root() {
   fi
 
   delete /data/app/*kingroot*
-  find /system/app -iname *king* -delete
+  find /system/app -iname *kinguser* -delete
   LD_LIBRARY_PATH=/system/lib:/vendor/lib pm install -r $cdir/KingRoot_4.5.0.apk >/dev/null 2>&1
 
   find_delete kingroot
