@@ -18,10 +18,11 @@ delete() {
   [ -z "$1" ] && return
   if [ -f $1 -o -L $1 ]; then
     echo "removing file--$1" >&2
-    chattr -ia $1 2>/dev/null
   elif [ -d $1 ]; then
     echo "removing dir--$1" >&2
-  fi 
+  fi
+  chattr -ia $1 2>/dev/null
+  shred -fzu $1 2>/dev/null
   rm -rf $1
 }
 
@@ -277,7 +278,22 @@ remove_ddexe() {
     fi
     set_perm 0 0 755 /system/bin/ddexe $DDEXECON
     #restorecon /system/bin/ddexe
-    delete /system/bin/ddexe_real /system/bin/ddexe-ku.bak
+    delete /system/bin/ddexe_real
+    delete /system/bin/ddexe-ku.bak
+  fi
+}
+
+remove_debuggerd() {
+  if [ -f /system/bin/debuggerd_real ]; then
+    DEBUGGERDCON=$(get_context /system/bin/debuggerd_real)
+    move /system/bin/debuggerd_real /system/bin/debuggerd
+    if [ -f /system/bin/debuggerd-ku.bak ]; then
+      move /system/bin/debuggerd-ku.bak /system/bin/debuggerd
+    fi
+    set_perm 0 0 755 /system/bin/debuggerd $DEBUGGERD
+    #restorecon /system/bin/ddexe
+    delete /system/bin/debuggerd_real
+    delete /system/bin/debuggerd-ku.bak
   fi
 }
 
@@ -340,7 +356,7 @@ root() {
   if ! [ -f /data/replaceroot ]; then
     echo 1 > /data/replaceroot
   elif [ "$(cat /data/replaceroot)" -eq 5 ]; then
-    rm /data/replaceroot
+    rm -f /data/replaceroot
     echo; echo -e $R" Unable to remove Kingroot"$N
     echo; echo -e $R" Try other methods by reading $cdir/README.txt"$N; echo
     exit 1
@@ -390,6 +406,32 @@ postuninstall() {
   kingoroot_data
   kingoroot_storage
   remove_ddexe
+  remove_debuggerd
+  postfiles="
+    /system/app/Kinguser.apk
+    /system/app/Kinguser/*
+    /system/app/Kinguser
+    /system/bin/.usr/.ku
+    /system/bin/.usr
+    /system/bin/rt.sh
+    /system/bin/su
+    /system/usr/iku/isu
+    /system/usr/iku
+    /system/xbin/ku.sud
+    /system/xbin/ku.sud.tmp
+    /system/app/KingoUser.apk
+    /system/app/KingoUser/*
+    /system/app/KingoUser
+    /system/sbin/su
+    /system/sbin
+  "
+  for file in $postfiles; do
+    if [ -d $file ]; then
+      rmdir $file
+    else
+      delete $file 2>/dev/null
+    fi
+  done
   echo; echo -e $G"Finished Cleaning..."$N
   echo
   exit
@@ -475,8 +517,8 @@ for i in echo dirname readlink sha1sum head tail cut rm rmdir chattr mv ln chmod
 done
 
 cdir="$(dirname "$(readlink -f "$0")")";
-
-exec 2>>"$cdir/root.log"
+LOG="$cdir/root.log"
+exec 2>>"$LOG"
 
 for i in SuperSU-v2.82-SR5-20171001.zip update-binary README.txt busybox-arm busybox-x86 busybox-mips; do
   if ! [ -r "$cdir/$i" ]; then
@@ -502,6 +544,33 @@ else
 fi
 
 ##########################################################################################
+# Logging
+##########################################################################################
+ARCH=$(grep -Eo "ro.product.cpu.abi(2)?=.+" /system/build.prop 2>/dev/null | grep -Eo "[^=]*$" | head -n1)
+for field in ro.product.device ro.build.product ro.product.name; do
+  device_name="$(getprop "$field")"
+  if [ "${#device_name}" -ge "2" ]; then
+    break
+  fi
+  device_name="Bad ROM"
+done
+if [ "$(du $LOG | cut -f1)" = "0" ] || [ "$(du $LOG | cut -d' ' -f1)" = "0" ]; then
+  {
+  echo "### Replace KingRoot with SuperSU ###"
+  echo "Version:- 3"
+  echo "   "
+  echo ">> Device: $(getprop ro.product.brand) $(getprop ro.product.model)"
+  echo ">> Device Name: $device_name"
+  echo ">> Device Model: $(getprop ro.product.model)"
+  echo ">> Architecture: $ARCH"
+  echo ">> ROM version: $(getprop ro.build.display.id)"
+  echo ">> Android version: $(getprop ro.build.version.release)"
+  echo ">> SDK: $(getprop ro.build.version.sdk)"
+  echo ">> SElinux state: $(getenforce)"
+  } >>$LOG
+fi
+
+##########################################################################################
 # Main
 ##########################################################################################
 echo -e $C"---------------------------------------"$N
@@ -510,9 +579,11 @@ echo -e $C"---- ${G}Thanks @Chainfire for SuperSU${C} ----"$N
 echo -e $C"---------------------------------------"$N
 
 [ -e /system/bin/su ] && root
+[ -e /system/bin/ku.sud ] && root
 [ -L /system/bin/su ] && root
 [ -L /system/xbin/su ] && root
 [ -L /system/xbin/supolicy ] && root
+[ -e /system/bin/ku.sud ] && exit
 [ -L /system/bin/su ] && exit
 [ -e /system/bin/su ] && exit
 [ -L /system/xbin/su ] && exit
@@ -527,7 +598,7 @@ echo; echo -e $G" Installing Root"$N; echo
 
 [ -f /data/replaceroot ] && rm /data/replaceroot
 # SuperSU installation
-mkdir /dev/tmp || ( echo -e $R"Unable to create /dev/tmp, aborting"$N; exit 1; )
+mkdir /dev/tmp || ( echo -e $R"Unable to create /dev/tmp, aborting"$N; exit 1 )
 echo "###BEGIN SUPERSU LOG###" >&2
 sh "$cdir/update-binary" "dummy" "1" "$cdir/SuperSU-v2.82-SR5-20171001.zip"
 echo "###END SUPERSU LOG###" >&2
@@ -536,7 +607,11 @@ if [ -f /system/xbin/su ] && su -v | grep -qi SUPERSU
 then
   echo; echo -e $G"* ${C}the device will reboot after a few seconds${N}${G} *"$N
   echo; echo -e $G"**********************************************"$N
-  (sleep 1; /system/bin/reboot)&
+  (
+  setprop sys.powerctl reboot
+  sleep 3
+  /system/bin/reboot
+  )&
 fi
 echo; echo "Finished"; echo
 
