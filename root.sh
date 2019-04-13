@@ -291,7 +291,7 @@ remove_debuggerd() {
       move /system/bin/debuggerd-ku.bak /system/bin/debuggerd
     fi
     set_perm 0 0 755 /system/bin/debuggerd $DEBUGGERDCON
-    #restorecon /system/bin/ddexe
+    #restorecon /system/bin/debuggerd
     delete /system/bin/debuggerd_real
     delete /system/bin/debuggerd-ku.bak
   fi
@@ -554,7 +554,7 @@ for field in ro.product.device ro.build.product ro.product.name; do
   fi
   device_name="Bad ROM"
 done
-if [ "$(du $LOG | cut -f1)" = "0" ] || [ "$(du $LOG | cut -d' ' -f1)" = "0" ]; then
+if [ -z "$(cat $LOG)" ]; then
   {
   echo "### Replace KingRoot with SuperSU ###"
   echo "Version:- 3"
@@ -579,11 +579,11 @@ echo -e $C"---- ${G}Thanks @Chainfire for SuperSU${C} ----"$N
 echo -e $C"---------------------------------------"$N
 
 [ -e /system/bin/su ] && root
-[ -e /system/bin/ku.sud ] && root
+[ -e /system/xbin/ku.sud ] && root
 [ -L /system/bin/su ] && root
 [ -L /system/xbin/su ] && root
 [ -L /system/xbin/supolicy ] && root
-[ -e /system/bin/ku.sud ] && exit
+[ -e /system/xbin/ku.sud ] && exit
 [ -L /system/bin/su ] && exit
 [ -e /system/bin/su ] && exit
 [ -L /system/xbin/su ] && exit
