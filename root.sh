@@ -257,11 +257,11 @@ remove_install_recovery() {
     IRCON=$(get_context /system/etc/install-recovery.sh-ku.bak)
     set_perm 0 0 755 /system/etc/install-recovery.sh $IRCON
     #restorecon /system/etc/install-recovery.sh
-  elif [ -f /system/etc/install-recovery.sh ] && grep -q su /system/etc/install-recovery.sh; then
+  elif [ -f /system/etc/install-recovery.sh ] && grep -q xbin /system/etc/install-recovery.sh; then
     delete /system/etc/install-recovery.sh
     delete /system/bin/install-recovery.sh
   fi
-  if [ -f /system/bin/install-recovery.sh-ku.bak ] && [ ! -L /system/bin/install-recovery.sh ]; then
+  if [ -f /system/bin/install-recovery.sh-ku.bak ] && ! [ -L /system/bin/install-recovery.sh ]; then
     move /system/bin/install-recovery.sh-ku.bak /system/bin/install-recovery.sh
     IRCON=$(get_context /system/bin/install-recovery.sh-ku.bak)
     set_perm 0 0 755 /system/bin/install-recovery.sh $IRCON
