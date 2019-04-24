@@ -473,11 +473,16 @@ else
 fi
 cd "$OLDPWD"
 
-case "$(uname -m)" in
+if [ -z "$(command -v getprop)" ]; then
+  echo "getprop command not found."
+  exit 1
+fi
+
+case "$(getprop ro.product.cpu.abi)" in
   *arm*) ARCH=arm;;
   *86*) ARCH=x86;;
   *mips*) ARCH=mips;;
-  *) echo -e $R" Unsupported ARCH $(uname -m)"$N
+  *) echo -e $R" Unsupported ARCH $(getprop ro.product.cpu.abi)"$N
      exit 1
   ;;
 esac
