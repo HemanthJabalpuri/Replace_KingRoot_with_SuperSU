@@ -496,7 +496,9 @@ then
   exit 1
 fi
 
-rm -f /system/xbin/busybox
+if [ -e /system/xbin/busybox ]; then
+  rm /system/xbin/busybox
+fi
 cat ${bbpath}/busybox-$ARCH > /system/xbin/busybox
 chmod 555 /system/xbin/busybox
 if ! [ -x "/system/xbin/busybox" ]; then
