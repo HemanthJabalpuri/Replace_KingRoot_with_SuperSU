@@ -496,18 +496,22 @@ then
   exit 1
 fi
 
+rm -f /system/xbin/busybox
+cat ${bbpath}/busybox-$ARCH > /system/xbin/busybox
+chmod 555 /system/xbin/busybox
+if ! [ -x "/system/xbin/busybox" ]; then
+  echo $R"Busybox setup failed"$N
+  exit 1
+fi
+bb="/system/xbin/busybox"
 cd /system/xbin
 for link in $(ls); do
   if [ -L $link ]; then
-    case $(readlink $link) in
-      *busybox) rm -f $link;;
+    case $($bb readlink $link) in
+      *busybox) $bb rm -f $link;;
     esac
   fi
 done
-rm -f /system/xbin/busybox
-
-cp -f ${bbpath}/busybox-$ARCH /system/xbin/busybox
-chmod 555 /system/xbin/busybox
 /system/xbin/busybox --install -s /system/xbin
 
 export PATH=/system/xbin:/system/bin
