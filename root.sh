@@ -505,7 +505,7 @@ if ! [ -x "/system/xbin/busybox" ]; then
 fi
 bb="/system/xbin/busybox"
 cd /system/xbin
-for link in $(ls); do
+for link in $($bb ls); do
   if [ -L $link ]; then
     case $($bb readlink $link) in
       *busybox) $bb rm -f $link;;
