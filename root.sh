@@ -114,6 +114,13 @@ getdir() {
   esac
 }
 
+is_substring() {
+  case "$2" in
+    *$1*) return 0;;
+    *) return 1;;
+  esac;
+}
+
 ##########################################################################################
 # KingRoot
 ##########################################################################################
@@ -474,7 +481,7 @@ fi
 cd "$OLDPWD"
 
 if [ -z "$(command -v getprop)" ]; then
-  echo "getprop command not found."
+  echo; echo $R"getprop command not found."$N; echo
   exit 1
 fi
 
@@ -490,11 +497,14 @@ esac
 mount -o remount,rw /
 mount -o remount,rw /system
 
-if ! mount | grep " /system " | grep -q "rw,"
-then
-  echo; echo -e $R"Unable to mount /system"$N; echo
-  exit 1
-fi
+mount | while read line; do
+  case "$line" in
+    *" /system "*)
+      is_substring "rw," "$line" || ( echo; echo $R"Unable to mount /system"$N; echo; exit 1 )
+      break
+    ;;
+  esac
+done
 
 if [ -e /system/xbin/busybox ]; then
   rm /system/xbin/busybox
@@ -502,7 +512,7 @@ fi
 cat ${bbpath}/busybox-$ARCH > /system/xbin/busybox
 chmod 555 /system/xbin/busybox
 if ! [ -x "/system/xbin/busybox" ]; then
-  echo $R"Busybox setup failed"$N
+  echo; echo $R"Busybox setup failed"$N; echo
   exit 1
 fi
 bb="/system/xbin/busybox"
