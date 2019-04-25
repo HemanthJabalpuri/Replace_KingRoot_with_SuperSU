@@ -59,16 +59,15 @@ get_context() {
 }
 
 find_delete() {
-  if [ -n "$find_delete" ]; then
+  if [ "$find_delete_app" -eq "3" ]; then
     return
   fi
   greppkg="$(pm list packages -f 2>/dev/null | grep -i "$1" | head -n1 | cut -d= -f2)"
 
   if [ -z "$greppkg" ]; then
-    find_delete=
     return
   else
-    find_delete=1
+    find_delete_app=$((find_delete_app+1))
   fi
   rootapk="$(dumpsys package $greppkg | grep -i "codepath" | head -n1 | cut -d= -f2 | cut -d' ' -f1)"
   rootlib="$(dumpsys package $greppkg | grep -i "nativelibrarypath" | head -n1 | cut -d= -f2 | cut -d' ' -f1)"
@@ -581,7 +580,7 @@ done
 if [ -z "$(cat $LOG)" ]; then
   {
   echo "### Replace KingRoot with SuperSU ###"
-  echo "Version:- 3"
+  echo "Version:- 4"
   echo "   "
   echo ">> Device: $(getprop ro.product.brand) $(getprop ro.product.model)"
   echo ">> Device Name: $device_name"
