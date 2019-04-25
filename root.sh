@@ -509,6 +509,9 @@ done
 if [ -e /system/xbin/busybox ]; then
   rm /system/xbin/busybox
 fi
+if ! [ -d /system/xbin ]; then
+  mkdir /system/xbin && chmod 755 /system/xbin
+fi
 cat ${bbpath}/busybox-$ARCH > /system/xbin/busybox
 chmod 555 /system/xbin/busybox
 if ! [ -x "/system/xbin/busybox" ]; then
