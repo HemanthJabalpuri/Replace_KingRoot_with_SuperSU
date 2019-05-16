@@ -1,11 +1,11 @@
-# Replace King or KingoRoot with SuperSU
+# Replace King or Kingo ROOT with SuperSU
 
 #### To uninstall completely the script deletes files multiple times
 
 ## Method 1
 
 - Make a folder with name _**mrw**_ in internal storage
-  Extract this zip in that _**mrw**_ folder
+  Extract the zip downloaded from [XDA](https://forum.xda-developers.com/android/software/2019-replace-kingroot-v5-x-supersu-t3904880?) in that _**mrw**_ folder
 
 - Download Terminal Emulator and run following commands
 
@@ -21,9 +21,10 @@
 
 - After booted open Terminal Emulator app and type following
 
+  `su`  
   `sh /sdcard/mrw/root.sh`
 
-## Method 2 - by uninstalling Kingroot manually
+## Method 2 - by uninstalling KingRoot manually
 Root again with KingRoot
 and follow below procedure
 
