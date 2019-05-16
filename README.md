@@ -25,13 +25,12 @@
   `sh /sdcard/mrw/root.sh`
 
 ## Method 2 - by uninstalling KingRoot manually
-Root again with KingRoot
-and follow below procedure
+Root again with KingRoot if you lost root by following other Methods and follow below procedure
 
 - Type `su` in Terminal Emulator and go to KingRoot app
   - Tap on 3 dot
-  - choose settings
-  - choose remove root, _**untick**_ keep backup option and unroot
+  - choose `Settings`
+  - choose `Uninstall KingRoot`, _**untick**_ keep backup option and tap on `CONTINUE`
 
 _**Note:-**_ If your device rebooted at time of unrooting, this method will not work
 
@@ -47,22 +46,22 @@ _**Requires**_ :- Android Version less than 5.0
 - Unintall KingRoot by going to KingRoot app
   - Tap on 3 dot
   - choose settings
-  - choose remove root, _**tick**_ keep backup option and unroot
+  - choose `Uninstall KingRoot`, _**tick**_ keep backup option and tap on `CONTINUE`
 
 - Install older version of KingRoot eg v4.5.0 from [apkmirror](https://www.apkmirror.com/apk/kingroot-studio/kingroot/kingroot-4-5-0-release/)
   and root with it
 
 - Follow Method 1
 
-# Method 4 - by using Magisk Manager
+## Method 4 - by using Magisk Manager
 _**Requires**_ :- - Android Version greater than or equal to 5.0  
                      - Unlocked BootLoader else your device will soft brick
 
-- Reroot with KingRoot
+- Reroot with KingRoot if you lost root by following other Methods
 
 - Install Magisk Manager
   - install Magisk by connecting to internet
-  - tap on `install` option
+  - tap on `Install` option
   - choose `Direct Install(Recommended)`
 
 * Follow Method 2 and reboot your mobile
