@@ -261,13 +261,14 @@ if [ "$API" -eq "$API" ]; then
   if [ "$API" -ge "20" ]; then
     if [ "$ABILONG" = "arm64-v8a" ]; then ARCH=arm64; ARCHTOOLS=arm_tools; SYSTEMLIB=/system/lib64:/vendor/lib64; SYSTEMLIBTOOLS=/system/lib:/vendor/lib; SYSTEMLIBPATH=/system/lib64; APPPROCESS64=true; fi;
     if [ "$ABILONG" = "mips64" ]; then ARCH=mips64; ARCHTOOLS=mips_tools; SYSTEMLIB=/system/lib64:/vendor/lib64; SYSTEMLIBTOOLS=/system/lib:/vendor/lib; SYSTEMLIBPATH=/system/lib64; APPPROCESS64=true; fi;
-    if [ "$ABILONG" = "x86_64" ]; then ARCH=x64; ARCHTOOLS=x86_tools; SYSTEMLIB=/system/lib64:/vendor/lib64; SYSTEMLIBTOOLS=/system/lib:/vendor/lib; SYSTEMLIBPATH=/system/lib64; APPPROCESS64=true; fi;
+    if [ "$ABILONG" = "x86_64" ]; then SU=su; ARCH=x64; ARCHTOOLS=x86_tools; SYSTEMLIB=/system/lib64:/vendor/lib64; SYSTEMLIBTOOLS=/system/lib:/vendor/lib; SYSTEMLIBPATH=/system/lib64; APPPROCESS64=true; fi;
     APKFOLDER=true
     APKNAME=/system/app/SuperSU/SuperSU.apk
   fi
   if [ "$API" -ge "19" ]; then
     SUPOLICY=true
-    if [ "$(LD_LIBRARY_PATH=$SYSTEMLIB /system/toolbox ls -lZ /system/bin/toolbox | grep toolbox_exec > /dev/null; echo $?)" -eq "0" ]; then
+    if ! [ -f "/system/toolbox" ]; then tbin="/bin"; else tbin=""; fi
+    if [ "$(LD_LIBRARY_PATH=$SYSTEMLIB /system${tbin}/toolbox ls -lZ /system/bin/toolbox | grep toolbox_exec > /dev/null; echo $?)" -eq "0" ]; then
       INSTALL_RECOVERY_CONTEXT=u:object_r:toolbox_exec:s0
     fi
   fi
