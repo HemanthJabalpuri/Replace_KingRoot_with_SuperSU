@@ -18,11 +18,23 @@
 ##########################################################################################
 # Helper Functions
 ##########################################################################################
+set_perm() {
+  chown $1 "$4"; chgrp $2 "$4"
+  chmod $3 "$4"
+  [ -z "$(command -v chcon)" ] && return
+  if [ -z "$5" ] ; then
+    chcon u:object_r:system_file:s0 "$4"
+  else
+    chcon u:object_r:$5:s0 "$4"
+  fi
+}
+
 delete() {
   for i in "$@"; do
     [ -z "$i" ] && continue
     if [ -f $i ] || [ -L $i ]; then
       echo "removing file--$i" >&2
+      set_perm 0 0 0755 "$i"
     elif [ -d $i ]; then
       echo "removing dir--$i" >&2
     fi
@@ -38,17 +50,6 @@ move() {
     chattr -ia "$2"
   fi
   mv -f "$1" "$2"
-}
-
-set_perm() {
-  chown $1 "$4"; chgrp $2 "$4"
-  chmod $3 "$4"
-  [ -z "$(command -v chcon)" ] && return
-  if [ -z "$5" ] ; then
-    chcon u:object_r:system_file:s0 "$4"
-  else
-    chcon u:object_r:$5:s0 "$4"
-  fi
 }
 
 get_context() {
