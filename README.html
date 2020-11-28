@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Replace KingRoot with SuperSU</title>
+  <!-- <meta name="viewport" content="width=device-width, initial-scale=1.0"> -->
+  <meta name="description" content="Guide for Replacing KingRoot with SuperSU">
+  <meta name="keywords" content="KingRoot,SuperSU,BusyBox,Shell">
+  <meta name="author" content="HemanthJabalpuri">
+</head>
+<style>
+code {
+  background-color: #eee;
+}
+</style>
+<body>
+<h1>Replace King or Kingo ROOT with SuperSU</h1>
+
+<h4>To uninstall completely the script deletes files multiple times</h4>
+
+<hr />
+
+<h2>Method 1</h2>
+<ul>
+  <li>Make a folder with name <b><i>mrw</b></i> in internal storage<br />
+      Extract the zip downloaded from <a href=https://forum.xda-developers.com/android/software/2019-replace-kingroot-v5-x-supersu-t3904880? style=text-decoration:none>XDA</a> in that <b><i>mrw</b></i> folder</li>
+
+  <li>Download Terminal Emulator and run following commands<br />
+
+    <code>su<br />
+    sh  /sdcard/mrw/root.sh</code></li>
+
+  <li>After succeeded with Green text type following<br />
+
+    <code>sh  /sdcard/mrw/root.sh</code></li>
+    <ul>
+      <li><b>After this, your device will reboot by installing SuperSU</b></li>
+      <li><b>If the device not rebooted then execute the same for 5 times</b></li>
+    </ul>
+  <li>After booted open Terminal Emulator app and type following<br />
+
+    <code>su<br />
+    sh  /sdcard/mrw/root.sh</code></li>
+</ul>
+
+<hr />
+
+<h2>Method 2 - by uninstalling KingRoot manually</h2>
+Root again with KingRoot if you lost root by following other Methods and follow below procedure
+<ul>
+<li>Type <code>su</code> in Terminal Emulator and go to KingRoot app
+  <ul>
+    <li>Tap on 3 dot</li>
+    <li>choose <code>Settings</code></li>
+    <li>choose <code>Uninstall KingRoot</code>, <b><i>untick</b></i> keep backup option and tap on <code>CONTINUE</code></li>
+  </ul>
+</li>
+<b><i>Note:-</b></i> If your device rebooted at time of unrooting, this method will not work
+
+<li>Go to Terminal Emulator and type<br />
+
+  <code>sh  /sdcard/mrw/root.sh</code></li>
+
+<li>Your device will reboot after that and rooted with SuperSU</li>
+</ul>
+
+<hr />
+
+<h2>Method 3 - by using older version of KingRoot</h2>
+<b><i>Requires</b></i> :- Android Version less than 5.0
+<ul>
+<li>Unintall KingRoot by going to KingRoot app
+  <ul>
+    <li>Tap on 3 dot</li>
+    <li>choose settings</li>
+    <li>choose <code>Uninstall KingRoot</code>, <b><i>tick</b></i> keep backup option and tap on <code>CONTINUE</code></li>
+  </ul>
+</li>
+<li>Install older version of KingRoot eg v4.5.0 from <a href=https://www.apkmirror.com/apk/kingroot-studio/kingroot/kingroot-4-5-0-release/ style=text-decoration:none>apkmirror</a>
+  and root with it</li>
+
+<li>Follow Method 1</li>
+</ul>
+
+<hr />
+
+<h2>Method 4 - by using Magisk Manager</h2>
+<b><i>Requires</b></i> :
+- Android Version greater than or equal to 5.0<br />
+- Unlocked BootLoader else your device will soft brick<br />
+<br />
+<b>Note:</b> This method will install <b>Magisk</b> as your root solution.
+
+<ul>
+<li>Reroot with KingRoot if you lost root by following other Methods</li>
+
+<li>Install Magisk Manager
+  <ul>
+    <li>turn on Internet</li>
+    <li>tap on <code>Install</code> option</li>
+    <li>choose <code>Direct Install(Recommended)</code></li>
+  </ul>
+</li>
+<li>Follow Method 2 and reboot your mobile</li>
+</ul>
+
+<hr />
+
+</body>
+
+</html>
