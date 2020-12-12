@@ -102,11 +102,11 @@ find_delete() {
   delete "$rootapk"
   delete "$rootdata"
   delete "$rootlib"
-  find /data/dalvik-cache -iname *${greppkg}* -delete
+  find /data/dalvik-cache -iname "*${greppkg}*" -delete
 
   if [ "$sys" -eq "1" ]; then
     delete "$rootsysapk"
-    find /data/dalvik-cache -iname *$(basename $rootsysapk)* -delete
+    find /data/dalvik-cache -iname "*$(basename $rootsysapk)*" -delete
   fi
 }
 
@@ -363,7 +363,7 @@ root() {
   fi
 
   delete /data/app/*kingroot*
-  find /system/app -iname *kinguser* -delete
+  find /system/app -iname "*kinguser*" -delete
   LD_LIBRARY_PATH=/system/lib:/vendor/lib pm install -r $cdir/KingRoot_4.5.0.apk >/dev/null 2>&1
 
   find_delete kingroot
@@ -437,14 +437,10 @@ postuninstall() {
 ##########################################################################################
 # Pre-Checks
 ##########################################################################################
-BL='\e[01;90m' >/dev/null 2>&1; # Black
 R='\e[01;91m' >/dev/null 2>&1; # Red
 G='\e[01;92m' >/dev/null 2>&1; # Green
-Y='\e[01;93m' >/dev/null 2>&1; # Yellow
 B='\e[01;94m' >/dev/null 2>&1; # Blue
-P='\e[01;95m' >/dev/null 2>&1; # Purple
 C='\e[01;96m' >/dev/null 2>&1; # Cyan
-W='\e[01;97m' >/dev/null 2>&1; # White
 N='\e[0m' >/dev/null 2>&1; # Null
 
 id="$(id)"; id="${id#*=}"; id="${id%%\(*}"; id="${id%% *}"
