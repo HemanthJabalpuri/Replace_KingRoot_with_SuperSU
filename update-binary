@@ -295,10 +295,9 @@ if [ -z "$BIN" ] || [ -z "$BINTOOLS" ]; then
 
   BIN=/dev/tmp/supersu/$ARCH
   if [ ! -d "/dev/tmp/supersu/arm_tools" ]; then
-    if [ "$ARCH" = "armv7" ]; then ARCHTOOLS=arm; fi
-    if [ "$ARCH" = "arm64" ]; then ARCHTOOLS=arm; fi
-    if [ "$ARCH" = "x64" ]; then ARCHTOOLS=x86; fi
-    if [ "$ARCH" = "mips64" ]; then ARCHTOOLS=mips; fi
+    if [ "$ARCH" = "armv7" ] || [ "$ARCH" = "arm64" ]; then ARCHTOOLS=arm; fi
+    if [ "$ARCH" = "x86" ] || [ "$ARCH" = "x64" ]; then ARCHTOOLS=x86; fi
+    if [ "$ARCH" = "mips" ] || [ "$ARCH" = "mips64" ]; then ARCHTOOLS=mips; fi
   fi
   BINTOOLS=/dev/tmp/supersu/$ARCHTOOLS; echo "TOOLS---$BINTOOLS" >&2
   COM=/dev/tmp/supersu/common
@@ -456,7 +455,9 @@ if ($APPPROCESS); then
     fi
   fi
 fi
-cp_perm 0 0 0744 $COM/99SuperSUDaemon /system/etc/init.d/99SuperSUDaemon
+if [ -d "/system/etc/init.d" ]; then
+  cp_perm 0 0 0744 $COM/99SuperSUDaemon /system/etc/init.d/99SuperSUDaemon
+fi
 echo 1 > /system/etc/.installed_su_daemon
 set_perm 0 0 0644 /system/etc/.installed_su_daemon
 
