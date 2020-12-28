@@ -16,12 +16,12 @@ ui_print() {
 }
 
 is_mounted() {
-  test "$(mount | grep " $1 " | grep "rw,")"
+  test "$(mount | grep " $1 " | grep "rw[ ,]")"
   return $?
 }
 
 mount_() {
-  is_mounted $1 || mount $1 2>/dev/null || mount -o remount,rw $1 2>/dev/null || abort "Aborting..Unable to mount $1"
+  is_mounted $1 || mount $1 2>/dev/null || mount -o rw,remount $1 2>/dev/null || abort "Aborting..Unable to mount $1"
 }
 
 unmount() {
