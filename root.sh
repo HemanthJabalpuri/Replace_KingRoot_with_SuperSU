@@ -115,13 +115,6 @@ sha1_check() {
   return 1
 }
 
-is_substring() {
-  case "$2" in
-    *$1*) return 0;;
-    *) return 1;;
-  esac;
-}
-
 abort() {
   echo
   for i in "$@"; do
@@ -366,6 +359,7 @@ root() {
   find /system/app -iname "*kinguser*" -delete
   LD_LIBRARY_PATH=/system/lib:/vendor/lib pm install -r $cdir/KingRoot_4.5.0.apk >/dev/null 2>&1
 
+  find_delete_app=0
   find_delete kingroot
   find_delete com.toprange.locker
   find_delete com.kingx.cloudsdk
@@ -459,10 +453,6 @@ if ! [ -f "$cdir/root.sh" ]; then
   abort "Unable to get path of this script.. aborting"
 fi
 
-if [ -z "$(command -v getprop)" ]; then
-  abort "getprop command not found."
-fi
-
 case "$(getprop ro.product.cpu.abi)" in
   *arm*) ARCH=arm;;
   *86*) ARCH=x86;;
@@ -473,18 +463,8 @@ esac
 mount -o remount,rw /
 mount -o remount,rw /system
 
-mount | while read line; do
-  case "$line" in
-    *" /system "*)
-      is_substring "rw," "$line" || echo >"$cdir/error"
-      break
-    ;;
-  esac
-done
-if [ -f "$cdir/error" ]; then
-  rm "$cdir/error"
-  abort "Unable to mount /system"
-fi
+echo test >/system/test || abort "Unable to mount /system"
+rm /system/test
 
 bb="/system/xbin/busybox"
 [ -e $bb ] && rm $bb
@@ -531,7 +511,7 @@ if sha1_check "$cdir/busybox-arm" "fd959938c3858cdb0a4bcdc76667844231c025d4" &&
   sha1_check "$cdir/KingRoot_4.5.0.apk" "df48a7852a458da71f44bb3c95ef9b9588938e82" &&
   sha1_check "$cdir/README.html" "c8fcdf115eea49963f7de872bb90a2b57cf36f56" &&
   sha1_check "$cdir/SuperSU-v2.82-SR5-20171001.zip" "263e0d8ebecfa1cb5a6a3a7fcdd9ad1ecd7710b7" &&
-  sha1_check "$cdir/update-binary" "6f16f4a4d4c2597c256bff7336cf71ea153e87ee"
+  sha1_check "$cdir/update-binary" "4d6146d6df1ecc7d9c59d86cbc23e1c61bd7dfee"
 then
   true
 else
