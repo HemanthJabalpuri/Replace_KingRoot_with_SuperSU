@@ -8,11 +8,17 @@ OUTFD=$2
 ZIP=$3
 
 # Detect whether in boot mode
-ps | grep zygote | grep -qv grep && BOOTMODE=true || BOOTMODE=false
-$BOOTMODE || ps -A 2>/dev/null | grep zygote | grep -qv grep && BOOTMODE=true
+if ps | grep zygote | grep -qv grep; then BOOTMODE=true; else BOOTMODE=false; fi
+if ! $BOOTMODE; then
+  ps -A 2>/dev/null | grep zygote | grep -qv grep && BOOTMODE=true
+fi
 
 ui_print() {
-  $BOOTMODE && echo "$1" || echo -e "ui_print $1\nui_print" > /proc/self/fd/$OUTFD
+  if $BOOTMODE; then
+    echo "$1"
+  else
+    echo -e "ui_print $1\nui_print" > /proc/self/fd/$OUTFD
+  fi
 }
 
 is_mounted() {
