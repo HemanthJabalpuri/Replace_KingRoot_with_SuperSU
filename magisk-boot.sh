@@ -39,6 +39,13 @@ if [ "$1" = "info" ]; then
   exit
 fi
 
+INITF=$SRCDIR/bin/magiskinit
+[ -n "$1" ] && INITF="$1"
+if ! [ -f $INITF ] && ! [ -f $HOMEDIR/magiskinit ]; then
+  echo "magiskinit not found" >&2
+  exit
+fi
+
 mkdir -p $HOMEDIR
 cd $HOMEDIR || exit 1
 
@@ -57,8 +64,8 @@ elif $SELINUX && [ "$(getenforce)" != "Permissive" ]; then
   exit 1
 fi
 
-if ! cmp $SRCDIR/bin/magiskinit magiskinit >/dev/null 2>&1; then
-  cp -f $SRCDIR/bin/magiskinit ./
+if ! cmp $INITF magiskinit >/dev/null 2>&1; then
+  cp -f $INITF ./
   chmod 700 magiskinit
 
   rm magiskpolicy magisk >/dev/null 2>&1
@@ -108,7 +115,7 @@ if [ ! -f /sbin/.init-stamp ]; then
   if [ $have_rootfs -eq 0 ]; then
     echo "Have rootfs"
     mount -o rw,remount /
-    mkdir /root
+    mkdir /root 2>/dev/null
     chmod 750 /root
     for i in /sbin/*; do
       ln $i /root/${i/'/sbin/'/}
