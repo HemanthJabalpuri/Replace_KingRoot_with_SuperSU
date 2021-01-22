@@ -55,7 +55,14 @@ elif $SELINUX && [ "$(getenforce)" != "Permissive" ]; then
 fi
 
 INITF=$SRCDIR/bin/magiskinit
-[ -n "$1" ] && INITF="$1"
+if [ -n "$1" ]; then
+  tmpd="$PWD"; [ "$PWD" = "/" ] && tmpd=""
+  case "$1" in
+    /*) fpath="$1";;
+    *) fpath="$tmpd/${1#./}";;
+  esac
+  INITF="$fpath"
+fi
 if ! [ -f $INITF ] && ! [ -f $HOMEDIR/magiskinit ]; then
   echo "magiskinit not found" >&2
   exit
@@ -73,11 +80,32 @@ if ! cmp $INITF magiskinit >/dev/null 2>&1; then
   ln -s magiskinit magisk
 fi
 
+find_fun() {
+  if [ -n "$(command -v find)" ]; then
+    find "$@"
+    return
+  fi
+  block=$1
+  if [ -e /dev/block/by-name/$block ]; then
+    target=/dev/block/by-name/$block
+  elif [ -e /dev/block/bootdevice/by-name/$block ]; then
+    target=/dev/block/bootdevice/by-name/$block
+  elif [ -e /dev/block/platform/*/by-name/$block ]; then
+    target=/dev/block/platform/*/by-name/$block
+  elif [ -e /dev/block/platform/*/*/by-name/$block ]; then
+    target=/dev/block/platform/*/*/by-name/$block
+  elif [ -e /dev/$block ]; then
+    target=/dev/$block
+  fi
+  [ -L "$target" ] && ls $target 2>/dev/null
+}
+
 # Magisk function to find boot partition and prevent the installer from finding
 # it again
-find_block() {
-  for BLOCK in "$@"; do
-    DEVICES=$(find /dev/block -type l -iname $BLOCK) 2>/dev/null
+find_boot() {
+  SLOT=$1
+  for BLOCK in boot BOOT; do
+    DEVICES=$(find_fun /dev/block -type l -iname ${BLOCK}${SLOT}) 2>/dev/null
     for DEVICE in $DEVICES; do
       cd ${DEVICE%/*}
       local BASENAME="${DEVICE##*/}"
@@ -101,8 +129,7 @@ find_block() {
 }
 
 # Disaster prevention
-SLOT=$(getprop ro.boot.slot_suffix)
-find_block boot$SLOT
+find_boot $(getprop ro.boot.slot_suffix)
 
 cd $HOMEDIR || { $SELINUX && setenforce 1; exit 1; }
 
