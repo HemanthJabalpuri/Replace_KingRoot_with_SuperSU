@@ -22,16 +22,17 @@ SRCDIR=/storage/emulated/0/init.d
 mkdir -p $HOMEDIR
 cd $HOMEDIR || exit 1
 
+# SELinux stuffs
+SELINUX=false
+[ -e /sys/fs/selinux ] && [ -e /sys/fs/selinux/policy ] && SELINUX=true
+
 if ! cmp -s $SRCDIR/bin/magiskinit magiskinit; then
   cp $SRCDIR/bin/magiskinit ./
   chmod 700 magiskinit
 
-  ln -fs magiskinit magiskpolicy
+  $SELINUX && ln -fs magiskinit magiskpolicy
   ln -fs magiskinit magisk
 fi
-
-# start SU daemon
-export HOMEDIR
 
 # Magisk function to find boot partition and prevent the installer from finding
 # it again
@@ -61,7 +62,7 @@ find_block() {
 }
 
 # Root only at this point; hoping selinux is permissive
-if [ $(id -u) != 0 ] || [ "$(getenforce)" != "Permissive" ]; then
+if [ $(id -u) != 0 ] || [ "$($SELINUX && getenforce)" != "Permissive" ]; then
   echo "Root user only" >&2
   exit 1
 fi
@@ -70,10 +71,10 @@ fi
 SLOT=$(getprop ro.boot.slot_suffix)
 find_block boot$SLOT
 
-cd $HOMEDIR || { setenforce 1; exit 1; }
+cd $HOMEDIR || { $SELINUX && setenforce 1; exit 1; }
 
 # Patch selinux policy
-./magiskpolicy --live --magisk "allow magisk * * *"
+$SELINUX && ./magiskpolicy --live --magisk "allow magisk * * *"
 if [ ! -f /sbin/.init-stamp ]; then
   # Set up /root links to /sbin files
   mount | grep -qF rootfs
@@ -85,7 +86,7 @@ if [ ! -f /sbin/.init-stamp ]; then
     if ! ln /sbin/* /root; then
       echo "Error making /sbin hardlinks" >&2
       mount -o ro,remount /
-      setenforce 1
+      $SELINUX && setenforce 1
       exit 1
     fi
     mount -o ro,remount /
@@ -98,7 +99,7 @@ if [ ! -f /sbin/.init-stamp ]; then
 
   if [ ! -f /sbin/magiskinit ] || [ ! -f /sbin/magisk ]; then
     echo "Bad /sbin mount?" >&2
-    setenforce 1
+    $SELINUX && setenforce 1
     exit 1
   fi
 
@@ -128,4 +129,4 @@ if [ ! -f /sbin/.init-stamp ]; then
   magisk --boot-complete
 fi
 
-setenforce 1
+$SELINUX && setenforce 1
