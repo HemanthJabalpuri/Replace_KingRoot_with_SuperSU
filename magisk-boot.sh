@@ -26,12 +26,24 @@ cd $HOMEDIR || exit 1
 SELINUX=false
 [ -e /sys/fs/selinux ] && [ -e /sys/fs/selinux/policy ] && SELINUX=true
 
-if ! cmp -s $SRCDIR/bin/magiskinit magiskinit; then
-  cp $SRCDIR/bin/magiskinit ./
+# Root only at this point; hoping selinux is permissive
+id="$(id)"; id="${id#*=}"; id="${id%%\(*}"; id="${id%% *}"
+[ "$id" != "0" ] && [ "$id" != "root" ] && notsu=1
+if [ "$notsu" = 1 ]; then
+  echo "Root user only" >&2
+  exit 1
+elif $SELINUX && [ "$(getenforce)" != "Permissive" ]; then
+  echo "SELinux not Permissive" >&2
+  exit 1
+fi
+
+if ! cmp $SRCDIR/bin/magiskinit magiskinit >/dev/null 2>&1; then
+  cp -f $SRCDIR/bin/magiskinit ./
   chmod 700 magiskinit
 
-  $SELINUX && ln -fs magiskinit magiskpolicy
-  ln -fs magiskinit magisk
+  rm magiskpolicy magisk >/dev/null 2>&1
+  $SELINUX && ln -s magiskinit magiskpolicy
+  ln -s magiskinit magisk
 fi
 
 # Magisk function to find boot partition and prevent the installer from finding
@@ -61,12 +73,6 @@ find_block() {
   return 0
 }
 
-# Root only at this point; hoping selinux is permissive
-if [ $(id -u) != 0 ] || [ "$($SELINUX && getenforce)" != "Permissive" ]; then
-  echo "Root user only" >&2
-  exit 1
-fi
-
 # Disaster prevention
 SLOT=$(getprop ro.boot.slot_suffix)
 find_block boot$SLOT
@@ -80,15 +86,19 @@ if [ ! -f /sbin/.init-stamp ]; then
   mount | grep -qF rootfs
   have_rootfs=$?
   if [ $have_rootfs -eq 0 ]; then
+    echo "Have rootfs"
     mount -o rw,remount /
     mkdir /root
     chmod 750 /root
-    if ! ln /sbin/* /root; then
-      echo "Error making /sbin hardlinks" >&2
-      mount -o ro,remount /
-      $SELINUX && setenforce 1
-      exit 1
-    fi
+    for i in /sbin/*; do
+      ln $i /root/${i/'/sbin/'/}
+      if [ $? != 0 ]; then
+        echo "Error making /sbin hardlinks" >&2
+        mount -o ro,remount /
+        $SELINUX && setenforce 1
+        exit 1
+      fi
+    done
     mount -o ro,remount /
   fi
   # Create tmpfs /sbin overlay
@@ -130,3 +140,4 @@ if [ ! -f /sbin/.init-stamp ]; then
 fi
 
 $SELINUX && setenforce 1
+echo "Done..."
