@@ -19,6 +19,26 @@
 HOMEDIR=/data/local/tmp
 SRCDIR=/storage/emulated/0/init.d
 
+if [ "$1" = "info" ]; then
+  API=`getprop ro.build.version.sdk`
+  ABI=`getprop ro.product.cpu.abi | dd bs=1 count=3 2>/dev/null`
+  ABI2=`getprop ro.product.cpu.abi2 | dd bs=1 count=3 2>/dev/null`
+  ABILONG=`getprop ro.product.cpu.abi`
+
+  ARCH=arm
+  IS64BIT=false
+  [ "$ABI" = "x86" ] && ARCH=x86
+  [ "$ABI2" = "x86" ] && ARCH=x86
+  if [ "$ABILONG" = "arm64-v8a" ]; then ARCH=arm; IS64BIT=true; fi
+  if [ "$ABILONG" = "x86_64" ]; then ARCH=x86; IS64BIT=true; fi
+
+  [ "$API" -lt 17 ] && echo " Magisk is only for 4.2(17)+" && exit
+  echo "API is $API"
+  echo "Architecture is $ARCH"
+  echo "64bit == $IS64BIT"
+  exit
+fi
+
 mkdir -p $HOMEDIR
 cd $HOMEDIR || exit 1
 
