@@ -39,16 +39,6 @@ if [ "$1" = "info" ]; then
   exit
 fi
 
-INITF=$SRCDIR/bin/magiskinit
-[ -n "$1" ] && INITF="$1"
-if ! [ -f $INITF ] && ! [ -f $HOMEDIR/magiskinit ]; then
-  echo "magiskinit not found" >&2
-  exit
-fi
-
-mkdir -p $HOMEDIR
-cd $HOMEDIR || exit 1
-
 # SELinux stuffs
 SELINUX=false
 [ -e /sys/fs/selinux ] && [ -e /sys/fs/selinux/policy ] && SELINUX=true
@@ -63,6 +53,16 @@ elif $SELINUX && [ "$(getenforce)" != "Permissive" ]; then
   echo "SELinux not Permissive" >&2
   exit 1
 fi
+
+INITF=$SRCDIR/bin/magiskinit
+[ -n "$1" ] && INITF="$1"
+if ! [ -f $INITF ] && ! [ -f $HOMEDIR/magiskinit ]; then
+  echo "magiskinit not found" >&2
+  exit
+fi
+
+mkdir -p $HOMEDIR
+cd $HOMEDIR || exit 1
 
 if ! cmp $INITF magiskinit >/dev/null 2>&1; then
   cp -f $INITF ./
