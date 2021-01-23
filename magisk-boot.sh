@@ -72,7 +72,7 @@ mkdir -p $HOMEDIR
 cd $HOMEDIR || exit 1
 
 if ! cmp $INITF magiskinit >/dev/null 2>&1; then
-  cp -f $INITF ./
+  cp -f $INITF ./magiskinit
   chmod 700 magiskinit
 
   rm magiskpolicy magisk >/dev/null 2>&1
