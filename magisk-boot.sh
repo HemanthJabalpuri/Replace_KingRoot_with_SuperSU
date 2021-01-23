@@ -105,7 +105,7 @@ find_fun() {
 find_boot() {
   SLOT=$1
   for BLOCK in boot BOOT; do
-    DEVICES=$(find_fun /dev/block -type l -iname ${BLOCK}${SLOT}) 2>/dev/null
+    DEVICES=$(find_fun /dev/block -type l -name ${BLOCK}${SLOT}) 2>/dev/null
     for DEVICE in $DEVICES; do
       cd ${DEVICE%/*}
       local BASENAME="${DEVICE##*/}"
