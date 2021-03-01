@@ -18,7 +18,7 @@
 #
 
 HOMEDIR=/data/local/tmp
-SRCDIR=/sdcard/init.d
+SRCDIR=/storage/emulated/0/init.d
 
 API=`getprop ro.build.version.sdk`
 ABI=`getprop ro.product.cpu.abi | dd bs=1 count=3 2>/dev/null`
@@ -68,32 +68,25 @@ if [ -n "$1" ]; then
 fi
 if ! [ -f "$MAPK" ]; then
   echo "magisk apk not found" >&2
-  exit
+  exit 1
 fi
 
-MBIN=$HOMEDIR/magiskbin
-mkdir -p $MBIN
-cd $MBIN || exit 1
+mkdir -p $HOMEDIR
+cd $HOMEDIR || exit 1
 
 BUSYBOX="$(command -v busybox)"
 if [ -z "$BUSYBOX" ]; then
   echo "Install busybox" >&2
-  exit
+  exit 1
 fi
 #BUSYBOX=/data/busybox && chmod 777 $BUSYBOX
 [ "$ARCH" = "arm" ] && ARCH=armeabi-v7a
-MTMP=$HOMEDIR/magisktmp
-mkdir $MTMP
-$BUSYBOX unzip -q "$MAPK" -d $MTMP || exit 1
-cd $MTMP/lib/$ARCH
+$BUSYBOX unzip -ojq "$MAPK" "lib/$ARCH/*" -x "lib/$ARCH/libbusybox.so" || exit 1
 for libfile in lib*.so; do
   file="${libfile#lib}"; file="${file%.so}"
-  mv "$libfile" "$MBIN/$file"
-  chmod 700 "$MBIN/$file"
+  mv -f "$libfile" "$file"
+  chmod 700 "$file"
 done
-cd -
-mv $MTMP/assets/* $MBIN
-rm -rf $MTMP
 
 find_fun() {
   if [ -n "$(command -v find)" ]; then
@@ -146,10 +139,9 @@ find_boot() {
 # Disaster prevention
 find_boot $(getprop ro.boot.slot_suffix)
 
-cd $HOMEDIR
 rm magiskpolicy magisk >/dev/null 2>&1
-$SELINUX && ln -s $MBIN/magiskinit magiskpolicy
-ln -s $MBIN/magiskinit magisk
+$SELINUX && ln -s magiskinit magiskpolicy
+ln -s magiskinit magisk
 
 # Patch selinux policy
 $SELINUX && ./magiskpolicy --live --magisk "allow magisk * * *"
@@ -173,8 +165,8 @@ if [ $have_rootfs -eq 0 ]; then
     fi
   done
   # copy xz compressed magisk binaries to /sbin
-  $MBIN/magiskboot compress=xz $MBIN/magisk32 /sbin/magisk32.xz
-  $IS64BIT && $MBIN/magiskboot compress=xz $MBIN/magisk64 /sbin/magisk64.xz
+  ./magiskboot compress=xz magisk32 /sbin/magisk32.xz
+  $IS64BIT && ./magiskboot compress=xz magisk64 /sbin/magisk64.xz
   mount -o ro,remount /
 fi
 
@@ -191,13 +183,7 @@ if [ ! -f /sbin/magiskinit ] || [ ! -f /sbin/magisk ]; then
 fi
 
 # Copy binaries
-cp $MBIN/magiskinit /sbin/
-if ! [ -f /data/adb/magisk/util_functions.sh ]; then
-  INSTALL_PATH=/data/user_de/0/com.topjohnwu.magisk/install/
-  [ $API -lt 24 ] && INSTALL_PATH=/data/data/com.topjohnwu.magisk/install/
-  mkdir $INSTALL_PATH 2>/dev/null
-  mv $MBIN/* $INSTALL_PATH
-fi
+cp magiskinit /sbin/
 rm -rf magisk*
 
 if [ $have_rootfs -ne 0 ]; then
